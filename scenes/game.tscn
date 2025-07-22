@@ -1,0 +1,67 @@
+[gd_scene load_steps=10 format=3 uid="uid://8wkf1f060q6x"]
+
+[ext_resource type="Texture2D" uid="uid://37rfb12sxmf4" path="res://assets/gfx/field.png" id="1_uwrxv"]
+[ext_resource type="PackedScene" uid="uid://50dwkkpv3435" path="res://scenes/ball.tscn" id="2_yqjtg"]
+[ext_resource type="PhysicsMaterial" uid="uid://cmnn0g2ut846l" path="res://resources/ball_bounce.tres" id="3_iywne"]
+[ext_resource type="PackedScene" uid="uid://bxcxxse5j47cs" path="res://scenes/PlayerPaddle.tscn" id="4_lbhrr"]
+[ext_resource type="PackedScene" uid="uid://bapka1y3gkaw2" path="res://scenes/AIPaddle.tscn" id="5_iywne"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_yqjtg"]
+size = Vector2(1932, 284)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_lnu2h"]
+size = Vector2(1939, 323)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_lbhrr"]
+size = Vector2(101.5, 521.5)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_iywne"]
+size = Vector2(262, 517)
+
+[node name="Game" type="Node2D"]
+
+[node name="Field" type="Sprite2D" parent="."]
+position = Vector2(962, 533)
+scale = Vector2(1.25651, 1.14258)
+texture = ExtResource("1_uwrxv")
+
+[node name="Ball" parent="." groups=["ball"] instance=ExtResource("2_yqjtg")]
+position = Vector2(-149, -6)
+can_sleep = false
+
+[node name="Walls" type="Node2D" parent="."]
+
+[node name="WallTop" type="StaticBody2D" parent="Walls"]
+physics_material_override = ExtResource("3_iywne")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallTop"]
+position = Vector2(956, 132)
+shape = SubResource("RectangleShape2D_yqjtg")
+
+[node name="WallBottom" type="StaticBody2D" parent="Walls"]
+physics_material_override = ExtResource("3_iywne")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallBottom"]
+position = Vector2(959.5, 954.5)
+shape = SubResource("RectangleShape2D_lnu2h")
+
+[node name="WallLeft" type="StaticBody2D" parent="Walls"]
+physics_material_override = ExtResource("3_iywne")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallLeft"]
+position = Vector2(50.25, 534.25)
+shape = SubResource("RectangleShape2D_lbhrr")
+
+[node name="WallRight" type="StaticBody2D" parent="Walls"]
+physics_material_override = ExtResource("3_iywne")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallRight"]
+position = Vector2(1793, 532.5)
+shape = SubResource("RectangleShape2D_iywne")
+
+[node name="PlayerPaddle" parent="." instance=ExtResource("4_lbhrr")]
+position = Vector2(-912, 166)
+
+[node name="AiPaddle" parent="." instance=ExtResource("5_iywne")]
+position = Vector2(432, 124)
+ball_path = NodePath("../Ball")
