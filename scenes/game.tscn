@@ -1,10 +1,13 @@
-[gd_scene load_steps=10 format=3 uid="uid://8wkf1f060q6x"]
+[gd_scene load_steps=18 format=3 uid="uid://8wkf1f060q6x"]
 
+[ext_resource type="Script" uid="uid://2xoilbwedro3" path="res://scenes/game.gd" id="1_gee14"]
 [ext_resource type="Texture2D" uid="uid://37rfb12sxmf4" path="res://assets/gfx/field.png" id="1_uwrxv"]
 [ext_resource type="PackedScene" uid="uid://50dwkkpv3435" path="res://scenes/ball.tscn" id="2_yqjtg"]
 [ext_resource type="PhysicsMaterial" uid="uid://cmnn0g2ut846l" path="res://resources/ball_bounce.tres" id="3_iywne"]
 [ext_resource type="PackedScene" uid="uid://bxcxxse5j47cs" path="res://scenes/PlayerPaddle.tscn" id="4_lbhrr"]
 [ext_resource type="PackedScene" uid="uid://bapka1y3gkaw2" path="res://scenes/AIPaddle.tscn" id="5_iywne"]
+[ext_resource type="AudioStream" uid="uid://c5k2yh1a7eu7h" path="res://AudioStreamPlayer/goal.mp3" id="6_p57ef"]
+[ext_resource type="Script" uid="uid://cjl7cxamdk8vm" path="res://scenes/goal.gd" id="6_u5sy4"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_yqjtg"]
 size = Vector2(1932, 284)
@@ -13,12 +16,28 @@ size = Vector2(1932, 284)
 size = Vector2(1939, 323)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lbhrr"]
-size = Vector2(101.5, 521.5)
+size = Vector2(68.5, 521.5)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_iywne"]
-size = Vector2(262, 517)
+size = Vector2(226, 517)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_p57ef"]
+size = Vector2(40, 187)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_u5sy4"]
+size = Vector2(40, 201.125)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gee14"]
+size = Vector2(32.25, 179.75)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_0tnpc"]
+size = Vector2(32.25, 184)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vtaks"]
+size = Vector2(24.5, 111.564)
 
 [node name="Game" type="Node2D"]
+script = ExtResource("1_gee14")
 
 [node name="Field" type="Sprite2D" parent="."]
 position = Vector2(962, 533)
@@ -26,8 +45,15 @@ scale = Vector2(1.25651, 1.14258)
 texture = ExtResource("1_uwrxv")
 
 [node name="Ball" parent="." groups=["ball"] instance=ExtResource("2_yqjtg")]
-position = Vector2(-149, -6)
+position = Vector2(-270, 583)
+rotation = -0.523598
 can_sleep = false
+spawn_marker_path = NodePath("SpawnPoint")
+
+[node name="SpawnPoint" type="Marker2D" parent="Ball"]
+position = Vector2(1022.93, 528.234)
+rotation = 0.523598
+gizmo_extents = 19.0
 
 [node name="Walls" type="Node2D" parent="."]
 
@@ -49,19 +75,90 @@ shape = SubResource("RectangleShape2D_lnu2h")
 physics_material_override = ExtResource("3_iywne")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallLeft"]
-position = Vector2(50.25, 534.25)
+position = Vector2(33.75, 534.25)
 shape = SubResource("RectangleShape2D_lbhrr")
 
 [node name="WallRight" type="StaticBody2D" parent="Walls"]
 physics_material_override = ExtResource("3_iywne")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallRight"]
-position = Vector2(1793, 532.5)
+position = Vector2(1811, 532.5)
 shape = SubResource("RectangleShape2D_iywne")
+
+[node name="WallRight2" type="StaticBody2D" parent="Walls"]
+physics_material_override = ExtResource("3_iywne")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallRight2"]
+position = Vector2(1677, 700.5)
+shape = SubResource("RectangleShape2D_p57ef")
+
+[node name="WallRight3" type="StaticBody2D" parent="Walls"]
+physics_material_override = ExtResource("3_iywne")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallRight3"]
+position = Vector2(1679, 356.438)
+shape = SubResource("RectangleShape2D_u5sy4")
+
+[node name="WallLeft2" type="StaticBody2D" parent="Walls"]
+physics_material_override = ExtResource("3_iywne")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallLeft2"]
+position = Vector2(85.875, 367.125)
+shape = SubResource("RectangleShape2D_gee14")
+
+[node name="WallLeft3" type="StaticBody2D" parent="Walls"]
+physics_material_override = ExtResource("3_iywne")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallLeft3"]
+position = Vector2(86, 699)
+shape = SubResource("RectangleShape2D_0tnpc")
 
 [node name="PlayerPaddle" parent="." instance=ExtResource("4_lbhrr")]
 position = Vector2(-912, 166)
 
-[node name="AiPaddle" parent="." instance=ExtResource("5_iywne")]
+[node name="AiPaddle" parent="." groups=["ball"] instance=ExtResource("5_iywne")]
 position = Vector2(432, 124)
+skill = 0.0
 ball_path = NodePath("../Ball")
+
+[node name="GoalAreaRight" type="Area2D" parent="."]
+script = ExtResource("6_u5sy4")
+is_right_goal = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GoalAreaRight"]
+position = Vector2(1673.25, 531.5)
+scale = Vector2(0.719435, 0.941814)
+shape = SubResource("RectangleShape2D_vtaks")
+
+[node name="GoalAreaLeft" type="Area2D" parent="."]
+scale = Vector2(0.910295, 0.999548)
+script = ExtResource("6_u5sy4")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GoalAreaLeft"]
+position = Vector2(93.3764, 532.241)
+scale = Vector2(0.725053, 1.06231)
+shape = SubResource("RectangleShape2D_vtaks")
+
+[node name="GoalSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_p57ef")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="ScoreLeft" type="Label" parent="UI"]
+offset_left = 813.0
+offset_top = 136.0
+offset_right = 870.0
+offset_bottom = 273.0
+theme_override_font_sizes/font_size = 100
+text = "0"
+
+[node name="ScoreRight" type="Label" parent="UI"]
+offset_left = 892.0
+offset_top = 136.0
+offset_right = 949.0
+offset_bottom = 273.0
+theme_override_font_sizes/font_size = 100
+text = "0"
+
+[connection signal="body_entered" from="GoalAreaRight" to="GoalAreaRight" method="_on_body_entered"]
+[connection signal="body_entered" from="GoalAreaLeft" to="GoalAreaLeft" method="_on_body_entered"]
