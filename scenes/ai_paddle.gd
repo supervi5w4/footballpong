@@ -1,169 +1,203 @@
 # ------------------------------------------------------------
-#  ai_paddle.gd – интеллектуальная ракетка-бот
-#  Godot 4.4.1 | GDScript 2.0 (без тернарного оператора)
+#  AiPaddle.gd – продвинутый бот для Football Pong
+#  Godot 4.4.1 | GDScript 2.0
 # ------------------------------------------------------------
 extends CharacterBody2D
 class_name AiPaddle
 
-# ---------- 1. Экспортные параметры ----------
-@export var skill: float = 0.8
+@export var skill: float = 0.85
 @export_enum("aggressive", "balanced", "defensive")
 var behaviour_style: String = "balanced"
 
-@export var ball_path: NodePath
+@export var ball_path:   NodePath
+@export var player_path: NodePath
 @export var defends_right_side: bool = true
 
 @export var goal_left:  Vector2 = Vector2(0, 540)
 @export var goal_right: Vector2 = Vector2(1920, 540)
 
-# ---------- 2. Константы ----------
-const FIELD_SIZE        := Vector2i(1920, 1080)
-const HALF_FIELD_X      := FIELD_SIZE.x / 2
-const BASE_SPEED        := 850.0
-const REACTION_BASE     := 0.15
-const ATTACK_OFFSET     := 70.0
-const ERROR_BASE_RADIUS := 32.0
+const FIELD_SIZE:  Vector2i  = Vector2i(1920, 1080)
+const HALF_FIELD_X: int      = FIELD_SIZE.x / 2
+const BASE_SPEED:   float    = 850.0
+const REACTION_BASE: float   = 0.12
+const ATTACK_OFFSET: float   = 80.0
+const ERROR_BASE_RADIUS: float = 24.0
 
-const STYLE_DB := {
-	"aggressive": {"speed_mul": 1.25, "risk_zone": 0.45, "error_mult": 1.3},
+const STYLE_DB: Dictionary = {
+	"aggressive": {"speed_mul": 1.35, "risk_zone": 0.50, "error_mult": 1.2},
 	"balanced":   {"speed_mul": 1.00, "risk_zone": 0.25, "error_mult": 1.0},
-	"defensive":  {"speed_mul": 0.85, "risk_zone": 0.10, "error_mult": 0.7},
+	"defensive":  {"speed_mul": 0.85, "risk_zone": 0.12, "error_mult": 0.8},
 }
 
-# ---------- 3. Поля ----------
-const Utils = preload("res://scripts/utils.gd")
+const Utils: Script = preload("res://scripts/utils.gd")
 
-var _ball: RigidBody2D
+enum State { DEFEND, INTERCEPT, SECOND_BOUNCE, BLOCK_PLAYER, ATTACK, FAKE }
+var _state: State = State.DEFEND
+
+var _ball:   RigidBody2D
+var _player: CharacterBody2D
+var _target_pos: Vector2 = Vector2.ZERO
 var _time_to_next_think: float = 0.0
-var _target_pos: Vector2
-var _is_attacking: bool = false
-var start_pos: Vector2
+var _fake_timer: float = 0.0
+var start_pos: Vector2 = Vector2.ZERO
 
-# ---------- 4. Инициализация ----------
+# ---------------- READY ----------------
 func _ready() -> void:
-	randomize()
-
-	if ball_path == NodePath(""):
-		push_error("AiPaddle: ball_path не назначен!")
-		return
-	_ball = get_node(ball_path) as RigidBody2D
-
-	start_pos   = global_position
-	_target_pos = global_position
-
-	_choose_new_target()
+	_ball   = get_node(ball_path)   as RigidBody2D
+	_player = get_node(player_path) as CharacterBody2D
+	start_pos = global_position
+	_think()
 	_schedule_next_think()
 
-# ---------- 4-bis. Сброс после гола ----------
 func reset_position() -> void:
 	global_position = start_pos
-	velocity        = Vector2.ZERO
-	_target_pos     = start_pos
-	_time_to_next_think = 0.0        # пересчитаем на следующем кадре
+	velocity = Vector2.ZERO
+	_state = State.DEFEND
+	_time_to_next_think = 0.0
+	_fake_timer = 0.0
 
-# ---------- 5. Главный цикл ----------
+# ---------------- MAIN ----------------
 func _physics_process(delta: float) -> void:
-	if _ball == null:
-		return
-
 	_time_to_next_think -= delta
+	_fake_timer -= delta
 	if _time_to_next_think <= 0.0:
-		_choose_new_target()
+		_think()
 		_schedule_next_think()
+	_move()
 
-	_move_towards_target()
-
+	# Удар по мячу с учетом spin
 	for i in range(get_slide_collision_count()):
-		var col := get_slide_collision(i)
+		var col: KinematicCollision2D = get_slide_collision(i)
 		if col.get_collider() is RigidBody2D and col.get_collider().is_in_group("ball"):
-			var ball := col.get_collider() as RigidBody2D
-			ball.linear_velocity = Utils.reflect(
-				ball.linear_velocity,
+			var info: Dictionary = Utils.reflect(
+				(col.get_collider() as RigidBody2D).linear_velocity,
 				col.get_normal(),
-				velocity,
-				1.05
-			)
+				velocity, 1.07)
+			var ball: RigidBody2D = col.get_collider() as RigidBody2D
+			ball.linear_velocity  = info["vel"]
+			ball.angular_velocity = info["spin"]
 
-# ---------- 6. Логика выбора цели ----------
-func _choose_new_target() -> void:
+# ---------------- THINK ----------------
+func _think() -> void:
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
+	var ball_pos: Vector2 = _ball.global_position
+	var player_pos: Vector2 = _player.global_position
+	var ball_dir: Vector2 = _ball.linear_velocity.normalized()
 
-	# 6-A. Прогноз положения мяча
-	var prediction_time: float = 0.25 + (1.0 - skill) * 0.3
-	var predicted_pos:  Vector2 = _ball.global_position + _ball.linear_velocity * prediction_time
+	var toward_player: Vector2 = (player_pos - ball_pos).normalized()
+	var toward_me:     Vector2 = (global_position - ball_pos).normalized()
 
-	# 6-B. Свои и чужие ворота (без ? :)
+	var b_to_player: bool = ball_dir.dot(toward_player) > 0.7
+	var b_to_me:     bool = ball_dir.dot(toward_me)     > 0.7
+
+	# --- FSM transitions ---
+	match _state:
+		State.DEFEND:
+			if b_to_me:
+				_state = State.INTERCEPT
+			elif b_to_player and randf() < 0.5:
+				_state = State.BLOCK_PLAYER
+			else:
+				_state = State.ATTACK
+		State.INTERCEPT:
+			if randf() < 0.25:
+				_state = State.FAKE
+			elif not b_to_me:
+				_state = State.SECOND_BOUNCE
+		State.SECOND_BOUNCE:
+			if b_to_me:
+				_state = State.INTERCEPT
+			elif not b_to_player:
+				_state = State.ATTACK
+		State.BLOCK_PLAYER:
+			if not b_to_player:
+				_state = State.ATTACK
+		State.FAKE:
+			if _fake_timer <= 0.0:
+				_state = State.INTERCEPT
+		State.ATTACK:
+			if b_to_me:
+				_state = State.INTERCEPT
+			elif b_to_player:
+				_state = State.BLOCK_PLAYER
+
+	# --- выбор позиции ---
+	match _state:
+		State.DEFEND:
+			_target_pos = _goal_pos(ball_pos)
+		State.INTERCEPT:
+			_target_pos = ball_pos
+		State.SECOND_BOUNCE:
+			_target_pos = _predict_second_bounce()
+		State.BLOCK_PLAYER:
+			_target_pos = _block_pos(player_pos)
+		State.FAKE:
+			_target_pos = ball_pos + Vector2(randf_range(-150.0,150.0), randf_range(-100.0,100.0))
+			_fake_timer = 0.25
+		State.ATTACK:
+			_target_pos = _attack_pos(ball_pos)
+
+	_add_error(style)
+
+# ------------ Helpers ---------------
+func _goal_pos(ball_pos: Vector2) -> Vector2:
+	var my_goal: Vector2
+	if defends_right_side:
+		my_goal = goal_right
+	else:
+		my_goal = goal_left
+	return my_goal.lerp(ball_pos, 0.25)
+
+func _attack_pos(ball_pos: Vector2) -> Vector2:
 	var enemy_goal: Vector2
 	if defends_right_side:
 		enemy_goal = goal_left
 	else:
 		enemy_goal = goal_right
-	var to_enemy: Vector2 = (enemy_goal - predicted_pos).normalized()
+	return ball_pos.lerp(enemy_goal, 0.10)
 
-	# 6-C. Летит ли мяч к нам? (без ? :)
-	var ball_moves_to_me: bool = false
+func _block_pos(player_pos: Vector2) -> Vector2:
+	var offset_y: float
+	if player_pos.y < FIELD_SIZE.y * 0.5:
+		offset_y = 120.0
+	else:
+		offset_y = -120.0
+	return Vector2(player_pos.x, clamp(player_pos.y + offset_y, 80.0, float(FIELD_SIZE.y - 80)))
+
+func _predict_second_bounce() -> Vector2:
+	var wall_x: float
 	if defends_right_side:
-		ball_moves_to_me = _ball.linear_velocity.x > 0
+		wall_x = float(FIELD_SIZE.x)
 	else:
-		ball_moves_to_me = _ball.linear_velocity.x < 0
+		wall_x = 0.0
+	var from: Vector2 = _ball.global_position
+	var vel: Vector2 = _ball.linear_velocity.normalized()
+	var dist: float = abs(wall_x - from.x)
+	var first_hit: Vector2 = from + vel * dist                # точка 1-го отскока
+	var after_bounce: Vector2 = Vector2(-vel.x, vel.y)        # отражение от вертикальной стены
+	return first_hit + after_bounce * dist * 0.3              # на треть пути к 2-му отскоку
 
-	# 6-D. Риск-зона (invade_limit_x и can_invade без ? :)
-	var risk_w: float = FIELD_SIZE.x * float(style.risk_zone)
+func _add_error(style: Dictionary) -> void:
+	var r: float = ERROR_BASE_RADIUS * (1.0 - skill) * float(style.error_mult)
+	_target_pos += Vector2(randf_range(-r, r), randf_range(-r, r))
 
-	var invade_limit_x: float
-	if defends_right_side:
-		invade_limit_x = HALF_FIELD_X + risk_w
-	else:
-		invade_limit_x = HALF_FIELD_X - risk_w
-
-	var can_invade: bool
-	if defends_right_side:
-		can_invade = predicted_pos.x < invade_limit_x
-	else:
-		can_invade = predicted_pos.x > invade_limit_x
-
-	# 6-E. Назначаем цель
-	if ball_moves_to_me:
-		_target_pos   = predicted_pos
-		_is_attacking = false
-	else:
-		_target_pos   = predicted_pos + to_enemy * ATTACK_OFFSET
-		_is_attacking = true
-
-	# 6-F. Граница центра
-	if not can_invade:
-		if defends_right_side:
-			_target_pos.x = max(_target_pos.x, HALF_FIELD_X + 16.0)
-		else:
-			_target_pos.x = min(_target_pos.x, HALF_FIELD_X - 16.0)
-
-	# 6-G. Добавляем ошибку
-	var error_radius: float = ERROR_BASE_RADIUS * (1.0 - skill) * float(style.error_mult)
-	_target_pos.x += randf_range(-error_radius, error_radius)
-	_target_pos.y += randf_range(-error_radius, error_radius)
-
-# ---------- 7. Движение ----------
-func _move_towards_target() -> void:
+# ------------ Movement --------------
+func _move() -> void:
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
-
 	var dir: Vector2 = _target_pos - global_position
-	if dir.length() < 1.0:
+	if dir.length() < 2.0:
 		velocity = Vector2.ZERO
 		return
 	dir = dir.normalized()
-
-	var speed: float = BASE_SPEED * float(style.speed_mul)
-	speed *= lerp(0.6, 1.0, skill)
-	if _is_attacking:
-		speed *= 1.15
-
+	var speed: float = BASE_SPEED * float(style.speed_mul) * lerp(0.6,1.0,skill)
+	if _state == State.ATTACK:
+		speed *= 1.2
 	velocity = dir * speed
 	move_and_slide()
 
-# ---------- 8. Планировщик реакции ----------
+# ------------ Timer --------------
 func _schedule_next_think() -> void:
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
-
-	var reaction: float = REACTION_BASE + (1.0 - skill) * 0.3
-	reaction *= randf_range(0.8, 1.5) * float(style.error_mult)
-	_time_to_next_think = reaction
+	var react: float = REACTION_BASE + (1.0 - skill) * 0.25
+	react *= randf_range(0.8, 1.4) * float(style.error_mult)
+	_time_to_next_think = react

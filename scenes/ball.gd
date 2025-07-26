@@ -1,73 +1,53 @@
-# ------------------------------------------------------------
-#  Ball.gd – мяч для Football Pong (с автопоиском SpawnPoint)
-#  Godot 4.4.1 | GDScript 2.0
-# ------------------------------------------------------------
 extends RigidBody2D
 class_name Ball
 
-@export var spawn_marker_path: NodePath   # можно указать вручную или оставить пустым
-
-const RESPAWN_DELAY := 2.0
+@export var spawn_marker_path: NodePath
+const RESPAWN_DELAY := 0.5
 const SERVE_SPEED   := 900.0
 const SPEED_LIMIT   := 1200.0
 const MIN_SPEED     := 600.0
-
 var _spawn_point: Vector2
 
 func _ready() -> void:
-	randomize()
-
-	# --- Автоматический поиск SpawnPoint ---
-	if spawn_marker_path == NodePath(""):
-		# Ищем родителя Game
-		var node := self
-		while node and node.name != "Game":
-			node = node.get_parent()
-		if node and node.has_node("SpawnPoint"):
-			spawn_marker_path = node.get_path_to(node.get_node("SpawnPoint"))
-			print("Ball: SpawnPoint found at path:", spawn_marker_path)
-	# --- Теперь берём позицию маркера (или fallback) ---
-	if spawn_marker_path != NodePath(""):
-		var marker := get_node(spawn_marker_path) as Node2D
-		_spawn_point = marker.global_position
-	else:
-		_spawn_point = global_position  # если ничего не найдено
-
+	_find_spawn()
 	_teleport_to_spawn()
-	serve(_random_dir())
+	_serve()
 
-func _physics_process(_delta: float) -> void:
-	var speed := linear_velocity.length()
-	if speed < MIN_SPEED and speed > 0:
-		linear_velocity = linear_velocity.normalized() * MIN_SPEED
-	elif speed > SPEED_LIMIT:
-		linear_velocity = linear_velocity.normalized() * SPEED_LIMIT
-
-func reset() -> void:
-	var old_layer := collision_layer
-	var old_mask  := collision_mask
-	collision_layer = 0
-	collision_mask  = 0
-
-	linear_velocity  = Vector2.ZERO
-	angular_velocity = 0
+func respawn() -> void:
 	_teleport_to_spawn()
-	sleeping = true
-
 	await get_tree().create_timer(RESPAWN_DELAY).timeout
+	_serve()
 
-	collision_layer = old_layer
-	collision_mask  = old_mask
-	sleeping        = false
-	serve(_random_dir())
+func _serve() -> void:
+	randomize()
+	linear_velocity = (Vector2.RIGHT if (randi() & 1)==0 else Vector2.LEFT) * SERVE_SPEED
 
-func serve(dir: Vector2) -> void:
-	linear_velocity = dir.normalized() * SERVE_SPEED
+# ---------- helpers ----------
+func _find_spawn() -> void:
+	var root := get_parent()
+	if spawn_marker_path == NodePath("") and root and root.has_node("SpawnPoint"):
+		spawn_marker_path = self.get_path_to(root.get_node("SpawnPoint"))
+	var m := get_node_or_null(spawn_marker_path) as Node2D
+	_spawn_point = m.global_position if m else global_position
 
 func _teleport_to_spawn() -> void:
-	global_position = _spawn_point
+	# стоп движение
+	PhysicsServer2D.body_set_state(get_rid(),
+		PhysicsServer2D.BODY_STATE_LINEAR_VELOCITY, Vector2.ZERO)
+	PhysicsServer2D.body_set_state(get_rid(),
+		PhysicsServer2D.BODY_STATE_ANGULAR_VELOCITY, 0.0)
 
-func _random_dir() -> Vector2:
-	if randi() % 2 == 0:
-		return Vector2.LEFT
-	return Vector2.RIGHT
+	# жёсткий телепорт
+	var t := Transform2D()
+	t.origin = _spawn_point
+	PhysicsServer2D.body_set_state(get_rid(),
+		PhysicsServer2D.BODY_STATE_TRANSFORM, t)
+
+	sleeping = false
+
+func _integrate_forces(state):
+	var v := linear_velocity.length()
+	if v > SPEED_LIMIT:
+		linear_velocity = linear_velocity.normalized() * SPEED_LIMIT
+	elif v > 0.0 and v < MIN_SPEED:
+		linear_velocity = linear_velocity.normalized() * MIN_SPEED

@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://8wkf1f060q6x"]
+[gd_scene load_steps=24 format=3 uid="uid://8wkf1f060q6x"]
 
 [ext_resource type="Script" uid="uid://2xoilbwedro3" path="res://scenes/game.gd" id="1_gee14"]
 [ext_resource type="Texture2D" uid="uid://37rfb12sxmf4" path="res://assets/gfx/field.png" id="1_uwrxv"]
@@ -8,6 +8,11 @@
 [ext_resource type="PackedScene" uid="uid://bapka1y3gkaw2" path="res://scenes/AIPaddle.tscn" id="5_iywne"]
 [ext_resource type="AudioStream" uid="uid://c5k2yh1a7eu7h" path="res://AudioStreamPlayer/goal.mp3" id="6_p57ef"]
 [ext_resource type="Script" uid="uid://cjl7cxamdk8vm" path="res://scenes/goal.gd" id="6_u5sy4"]
+[ext_resource type="Texture2D" uid="uid://yg1ln8spbfcw" path="res://assets/gfx/scoreboard.png" id="9_vtaks"]
+[ext_resource type="FontFile" uid="uid://crbejkyhfw2bi" path="res://fonts/PressStart2P-Regular.ttf" id="10_kvpfn"]
+[ext_resource type="Shader" uid="uid://c4rc2wb00mo10" path="res://scenes/flag_wind.gdshader" id="11_dinhu"]
+[ext_resource type="Texture2D" uid="uid://cg5tcy8oxtqo" path="res://assets/ui/spartak_flag.png" id="12_kvuet"]
+[ext_resource type="Texture2D" uid="uid://dprt5p2umwgvv" path="res://assets/gfx/gazaev.png" id="13_kvuet"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_yqjtg"]
 size = Vector2(1932, 284)
@@ -36,6 +41,13 @@ size = Vector2(32.25, 184)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_vtaks"]
 size = Vector2(24.5, 111.564)
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_trtic"]
+shader = ExtResource("11_dinhu")
+shader_parameter/amplitude = 6.0
+shader_parameter/wavelength1 = 40.0
+shader_parameter/wavelength2 = 20.0
+shader_parameter/speed = 1.6
+
 [node name="Game" type="Node2D"]
 script = ExtResource("1_gee14")
 
@@ -45,15 +57,10 @@ scale = Vector2(1.25651, 1.14258)
 texture = ExtResource("1_uwrxv")
 
 [node name="Ball" parent="." groups=["ball"] instance=ExtResource("2_yqjtg")]
-position = Vector2(-270, 583)
+position = Vector2(885, 528)
 rotation = -0.523598
 can_sleep = false
-spawn_marker_path = NodePath("SpawnPoint")
-
-[node name="SpawnPoint" type="Marker2D" parent="Ball"]
-position = Vector2(1022.93, 528.234)
-rotation = 0.523598
-gizmo_extents = 19.0
+spawn_marker_path = NodePath("../SpawnPoint")
 
 [node name="Walls" type="Node2D" parent="."]
 
@@ -114,12 +121,14 @@ position = Vector2(86, 699)
 shape = SubResource("RectangleShape2D_0tnpc")
 
 [node name="PlayerPaddle" parent="." instance=ExtResource("4_lbhrr")]
-position = Vector2(-912, 166)
+position = Vector2(173, 529)
 
 [node name="AiPaddle" parent="." groups=["ball"] instance=ExtResource("5_iywne")]
-position = Vector2(432, 124)
+position = Vector2(1598, 534)
 skill = 0.0
+behaviour_style = "defensive"
 ball_path = NodePath("../Ball")
+player_path = NodePath("../PlayerPaddle")
 
 [node name="GoalAreaRight" type="Area2D" parent="."]
 script = ExtResource("6_u5sy4")
@@ -144,21 +153,58 @@ stream = ExtResource("6_p57ef")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
+[node name="ScoreboardBG" type="TextureRect" parent="UI"]
+light_mask = 4
+visibility_layer = 4
+offset_left = 726.0
+offset_top = 23.0
+offset_right = 1750.0
+offset_bottom = 1047.0
+scale = Vector2(0.298335, 0.302808)
+texture = ExtResource("9_vtaks")
+
 [node name="ScoreLeft" type="Label" parent="UI"]
-offset_left = 813.0
-offset_top = 136.0
-offset_right = 870.0
-offset_bottom = 273.0
+offset_left = 767.0
+offset_top = 135.0
+offset_right = 867.0
+offset_bottom = 272.0
+theme_override_fonts/font = ExtResource("10_kvpfn")
 theme_override_font_sizes/font_size = 100
 text = "0"
 
 [node name="ScoreRight" type="Label" parent="UI"]
-offset_left = 892.0
-offset_top = 136.0
-offset_right = 949.0
-offset_bottom = 273.0
+offset_left = 900.0
+offset_top = 133.0
+offset_right = 1000.0
+offset_bottom = 270.0
+theme_override_fonts/font = ExtResource("10_kvpfn")
 theme_override_font_sizes/font_size = 100
 text = "0"
+
+[node name="FlagBG" type="TextureRect" parent="UI"]
+process_mode = 3
+process_priority = 1
+process_physics_priority = 1
+material = SubResource("ShaderMaterial_trtic")
+offset_left = 111.0
+offset_top = 3.0
+offset_right = 1135.0
+offset_bottom = 1027.0
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("12_kvuet")
+stretch_mode = 5
+
+[node name="TextureRect" type="TextureRect" parent="UI"]
+offset_left = 1712.0
+offset_top = 74.0
+offset_right = 3248.0
+offset_bottom = 1098.0
+scale = Vector2(0.02, 0.02)
+texture = ExtResource("13_kvuet")
+
+[node name="SpawnPoint" type="Marker2D" parent="."]
+position = Vector2(880, 529)
+gizmo_extents = 19.0
 
 [connection signal="body_entered" from="GoalAreaRight" to="GoalAreaRight" method="_on_body_entered"]
 [connection signal="body_entered" from="GoalAreaLeft" to="GoalAreaLeft" method="_on_body_entered"]

@@ -1,47 +1,44 @@
 # ------------------------------------------------------------
-#  PlayerPaddle.gd – ракетка-футболист игрока
-#  Godot 4.4.1  |  GDScript 2.0
+#  PlayerPaddle.gd – игрок-ракетка
+#  Godot 4.4.1 | GDScript 2.0
 # ------------------------------------------------------------
 extends CharacterBody2D
 class_name PlayerPaddle
 
-# ---------------- ПАРАМЕТРЫ ----------------
-@export var move_speed: float = 850.0               # скорость перемещения
-const Utils = preload("res://scripts/utils.gd")     # отражение мяча
+const MOVE_SPEED: float = 850.0
+const Utils: Script = preload("res://scripts/utils.gd")
 
-# ---------------- ВНУТРЕННЕЕ ----------------
-var start_pos: Vector2                              # запомним исходную точку
+var start_pos: Vector2 = Vector2.ZERO
 
-# ---------------- READY ----------------
 func _ready() -> void:
-	# Сохраняем позицию, где игрок стоит при загрузке сцены
 	start_pos = global_position
 
-# Метод для полного «ресета» после гола (вызывает Game.reset_round)
 func reset_position() -> void:
-	global_position = start_pos     # вернуть на исходное место
-	velocity = Vector2.ZERO         # остановить движение
+	global_position = start_pos
+	velocity = Vector2.ZERO
 
-# ---------------- ГЛАВНЫЙ ФИЗИЧЕСКИЙ ЦИКЛ ----------------
 func _physics_process(_delta: float) -> void:
-	# 1. Читаем ввод (стрелки или переопределённые действия ui_*)
-	var dir := Vector2(
+	# Управление клавишами
+	var dir: Vector2 = Vector2(
 		Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left"),
 		Input.get_action_strength("ui_down")  - Input.get_action_strength("ui_up")
 	)
-
-	# 2. Вычисляем скорость: нормализуем, чтоб диагональ не была быстрее
-	velocity = dir.normalized() * move_speed if dir != Vector2.ZERO else Vector2.ZERO
+	if dir != Vector2.ZERO:
+		velocity = dir.normalized() * MOVE_SPEED
+	else:
+		velocity = Vector2.ZERO
 	move_and_slide()
 
-	# 3. Проверяем столкновения и отражаем мяч
+	# Отражение мяча с передачей спина (spin)
 	for i in range(get_slide_collision_count()):
-		var col := get_slide_collision(i)
+		var col: KinematicCollision2D = get_slide_collision(i)
 		if col.get_collider() is RigidBody2D and col.get_collider().is_in_group("ball"):
-			var ball := col.get_collider() as RigidBody2D
-			ball.linear_velocity = Utils.reflect(
-				ball.linear_velocity,   # скорость до удара
-				col.get_normal(),       # нормаль контакта
-				velocity,               # скорость ракетки
-				1.05                    # +5 % ускорения
+			var info: Dictionary = Utils.reflect(
+				(col.get_collider() as RigidBody2D).linear_velocity,
+				col.get_normal(),
+				velocity,
+				1.05
 			)
+			var ball: RigidBody2D = col.get_collider() as RigidBody2D
+			ball.linear_velocity  = info["vel"]
+			ball.angular_velocity = info["spin"]
