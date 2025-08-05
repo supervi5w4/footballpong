@@ -40,4 +40,5 @@ func _on_start_pressed() -> void:
 	]
 
 	Score.teams = teams_data
+	Score.generate_matches()  # формируем расписание
 	get_tree().change_scene_to_file("res://scenes/tournament_calendar.tscn")

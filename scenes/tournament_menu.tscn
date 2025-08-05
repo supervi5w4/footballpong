@@ -1,5 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://ckuwg61l0wd1m"]
+[gd_scene load_steps=3 format=3 uid="uid://ckuwg61l0wd1m"]
 
+[ext_resource type="Script" uid="uid://b3xgxgnti3iwg" path="res://scenes/tournament_menu.gd" id="1_2sg7v"]
 [ext_resource type="FontFile" uid="uid://crbejkyhfw2bi" path="res://fonts/PressStart2P-Regular.ttf" id="1_khm0a"]
 
 [node name="TournamentMenu" type="Control"]
@@ -13,6 +14,7 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
+script = ExtResource("1_2sg7v")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_direction = 3
