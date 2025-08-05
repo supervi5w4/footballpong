@@ -1,0 +1,67 @@
+[gd_scene load_steps=3 format=3 uid="uid://wp5sqcamggfc"]
+
+[ext_resource type="Script" uid="uid://bmrfriqn04wno" path="res://scenes/tournament_calendar.gd" id="1_ke7y2"]
+[ext_resource type="FontFile" uid="uid://crbejkyhfw2bi" path="res://fonts/PressStart2P-Regular.ttf" id="2_v305x"]
+
+[node name="TournamentCalendar" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+size_flags_horizontal = 4
+size_flags_vertical = 4
+script = ExtResource("1_ke7y2")
+
+[node name="Label" type="Label" parent="."]
+layout_direction = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 835.0
+offset_top = 44.0
+offset_right = 1107.0
+offset_bottom = 60.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("2_v305x")
+text = "Календарь турнира"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 691.0
+offset_top = 96.0
+offset_right = 1041.0
+offset_bottom = 496.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MatchesList" type="VBoxContainer" parent="ScrollContainer"]
+unique_name_in_owner = true
+layout_direction = 2
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+
+[node name="PlayNextBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 800.0
+offset_top = 711.0
+offset_right = 1144.0
+offset_bottom = 742.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("2_v305x")
+text = "Играть следующий матч"
