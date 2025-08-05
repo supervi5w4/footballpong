@@ -51,7 +51,6 @@ texture = ExtResource("1_uwrxv")
 position = Vector2(885, 528)
 rotation = -0.523598
 can_sleep = false
-spawn_marker_path = NodePath("../SpawnPoint")
 
 [node name="Walls" type="Node2D" parent="."]
 

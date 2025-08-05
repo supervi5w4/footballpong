@@ -1,6 +1,7 @@
 # ------------------------------------------------------------
-#  AiPaddle.gd – продвинутый бот для Football Pong
+#  AiPaddle.gd – advanced bot for Football Pong
 #  Godot 4.4.1 | GDScript 2.0
+#  v2.1 – fixes ternary syntax for GDScript 2
 # ------------------------------------------------------------
 extends CharacterBody2D
 class_name AiPaddle
@@ -22,6 +23,8 @@ const BASE_SPEED:   float    = 850.0
 const REACTION_BASE: float   = 0.12
 const ATTACK_OFFSET: float   = 80.0
 const ERROR_BASE_RADIUS: float = 24.0
+const FIRST_HIT_DEVIATION_Y: float = 260.0   # vertical tweak for deceptive first hit
+const ADVANCE_LIMIT_PROPORTION: float = 0.47 # how far across midfield AI may advance
 
 const STYLE_DB: Dictionary = {
 	"aggressive": {"speed_mul": 1.35, "risk_zone": 0.50, "error_mult": 1.2},
@@ -41,6 +44,8 @@ var _time_to_next_think: float = 0.0
 var _fake_timer: float = 0.0
 var start_pos: Vector2 = Vector2.ZERO
 
+var _is_first_hit: bool = true
+
 # ---------------- READY ----------------
 func _ready() -> void:
 	_ball   = get_node(ball_path)   as RigidBody2D
@@ -55,6 +60,7 @@ func reset_position() -> void:
 	_state = State.DEFEND
 	_time_to_next_think = 0.0
 	_fake_timer = 0.0
+	_is_first_hit = true
 
 # ---------------- MAIN ----------------
 func _physics_process(delta: float) -> void:
@@ -65,7 +71,7 @@ func _physics_process(delta: float) -> void:
 		_schedule_next_think()
 	_move()
 
-	# Удар по мячу с учетом spin
+	# Удар по мячу с учетом spin + хитрость на первом касании
 	for i in range(get_slide_collision_count()):
 		var col: KinematicCollision2D = get_slide_collision(i)
 		if col.get_collider() is RigidBody2D and col.get_collider().is_in_group("ball"):
@@ -73,9 +79,23 @@ func _physics_process(delta: float) -> void:
 				(col.get_collider() as RigidBody2D).linear_velocity,
 				col.get_normal(),
 				velocity, 1.07)
+
 			var ball: RigidBody2D = col.get_collider() as RigidBody2D
+
+			# --- Deceptive first touch ---
+			if _is_first_hit:
+				var sign_dir: float = sign(ball.global_position.y - _player.global_position.y)
+				info["vel"].y += sign_dir * FIRST_HIT_DEVIATION_Y
+				_is_first_hit = false
+
 			ball.linear_velocity  = info["vel"]
 			ball.angular_velocity = info["spin"]
+
+	# Сброс флага первого касания, когда мяч покидает нашу половину
+	if not _is_first_hit:
+		if (defends_right_side and _ball.global_position.x < HALF_FIELD_X) or \
+		   (not defends_right_side and _ball.global_position.x > HALF_FIELD_X):
+			_is_first_hit = true
 
 # ---------------- THINK ----------------
 func _think() -> void:
@@ -138,38 +158,25 @@ func _think() -> void:
 			_target_pos = _attack_pos(ball_pos)
 
 	_add_error(style)
+	_clamp_advancement()
 
 # ------------ Helpers ---------------
 func _goal_pos(ball_pos: Vector2) -> Vector2:
-	var my_goal: Vector2
-	if defends_right_side:
-		my_goal = goal_right
-	else:
-		my_goal = goal_left
+	var my_goal: Vector2 = goal_right if defends_right_side else goal_left
 	return my_goal.lerp(ball_pos, 0.25)
 
 func _attack_pos(ball_pos: Vector2) -> Vector2:
-	var enemy_goal: Vector2
-	if defends_right_side:
-		enemy_goal = goal_left
-	else:
-		enemy_goal = goal_right
-	return ball_pos.lerp(enemy_goal, 0.10)
+	var enemy_goal: Vector2 = goal_left if defends_right_side else goal_right
+	# небольшое смещение вверх/вниз для обмана
+	var y_offset: float = ATTACK_OFFSET * sign(ball_pos.y - _player.global_position.y)
+	return (ball_pos + Vector2(0, y_offset)).lerp(enemy_goal, 0.10)
 
 func _block_pos(player_pos: Vector2) -> Vector2:
-	var offset_y: float
-	if player_pos.y < FIELD_SIZE.y * 0.5:
-		offset_y = 120.0
-	else:
-		offset_y = -120.0
+	var offset_y: float = 120.0 if player_pos.y < FIELD_SIZE.y * 0.5 else -120.0
 	return Vector2(player_pos.x, clamp(player_pos.y + offset_y, 80.0, float(FIELD_SIZE.y - 80)))
 
 func _predict_second_bounce() -> Vector2:
-	var wall_x: float
-	if defends_right_side:
-		wall_x = float(FIELD_SIZE.x)
-	else:
-		wall_x = 0.0
+	var wall_x: float = float(FIELD_SIZE.x) if defends_right_side else 0.0
 	var from: Vector2 = _ball.global_position
 	var vel: Vector2 = _ball.linear_velocity.normalized()
 	var dist: float = abs(wall_x - from.x)
@@ -180,6 +187,14 @@ func _predict_second_bounce() -> Vector2:
 func _add_error(style: Dictionary) -> void:
 	var r: float = ERROR_BASE_RADIUS * (1.0 - skill) * float(style.error_mult)
 	_target_pos += Vector2(randf_range(-r, r), randf_range(-r, r))
+
+func _clamp_advancement() -> void:
+	# Не зажимаем игрока в воротах, ограничиваем продвижение
+	var limit_x: float = FIELD_SIZE.x * ADVANCE_LIMIT_PROPORTION
+	if defends_right_side:
+		_target_pos.x = max(_target_pos.x, limit_x)
+	else:
+		_target_pos.x = min(_target_pos.x, FIELD_SIZE.x - limit_x)
 
 # ------------ Movement --------------
 func _move() -> void:
