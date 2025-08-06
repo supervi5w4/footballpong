@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://8wkf1f060q6x"]
+[gd_scene load_steps=22 format=3 uid="uid://8wkf1f060q6x"]
 
 [ext_resource type="Script" uid="uid://2xoilbwedro3" path="res://scenes/game.gd" id="1_gee14"]
 [ext_resource type="Texture2D" uid="uid://37rfb12sxmf4" path="res://assets/gfx/field.png" id="1_uwrxv"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://cjl7cxamdk8vm" path="res://scenes/goal.gd" id="6_u5sy4"]
 [ext_resource type="Texture2D" uid="uid://yg1ln8spbfcw" path="res://assets/gfx/scoreboard.png" id="9_vtaks"]
 [ext_resource type="FontFile" uid="uid://crbejkyhfw2bi" path="res://fonts/PressStart2P-Regular.ttf" id="10_kvpfn"]
+[ext_resource type="Script" uid="uid://cwbcr0civ3mn4" path="res://scenes/tournament_game.gd" id="12_dinhu"]
 [ext_resource type="Texture2D" uid="uid://dprt5p2umwgvv" path="res://assets/gfx/gazaev.png" id="13_kvuet"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_yqjtg"]
@@ -179,9 +180,19 @@ offset_bottom = 1098.0
 scale = Vector2(0.02, 0.02)
 texture = ExtResource("13_kvuet")
 
+[node name="MessageLabel" type="Label" parent="UI"]
+visible = false
+offset_left = 761.0
+offset_top = 289.0
+offset_right = 801.0
+offset_bottom = 312.0
+
 [node name="SpawnPoint" type="Marker2D" parent="."]
 position = Vector2(880, 529)
 gizmo_extents = 19.0
+
+[node name="TournamentController" type="Node" parent="."]
+script = ExtResource("12_dinhu")
 
 [connection signal="body_entered" from="GoalAreaRight" to="GoalAreaRight" method="_on_body_entered"]
 [connection signal="body_entered" from="GoalAreaLeft" to="GoalAreaLeft" method="_on_body_entered"]
