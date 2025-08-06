@@ -4,21 +4,23 @@ extends Node
 @export var half_duration : float = 15.0
 @export var pause_between_halves : float = 3.0
 
-@onready var game_node : Node2D = get_parent()
-@onready var message_label : Label = game_node.get_node("UI/MessageLabel")
+@onready var game_node     : Node2D = get_parent() as Node2D
+@onready var message_label : Label  = game_node.get_node("UI/MessageLabel") as Label
 
 var current_half : int = 0
 
 func _ready() -> void:
-	if Score.matches.is_empty():
-		return
+	# --- СБРОС СЧЁТА ---
+	Score.left  = 0
+	Score.right = 0
+
 	current_half = 0
 	_start_next_half()
 
 func _start_next_half() -> void:
 	current_half += 1
 	message_label.visible = false
-	game_node.reset_round()
+	game_node.call("reset_round")
 	await get_tree().create_timer(half_duration).timeout
 	_on_half_finished()
 
@@ -32,46 +34,45 @@ func _on_half_finished() -> void:
 		_finalize_match()
 
 func _finalize_match() -> void:
-	# Читаем итоговый счёт
-	var goals_left : int = Score.left
-	var goals_right : int = Score.right
+	# --- определяем сторону игрока ---
+	var goals_home : int = Score.left
+	var goals_away : int = Score.right
 
-	# Обновляем текущий матч
-	var match_index : int = Score.current_match
-	var match_data : Dictionary = Score.matches[match_index]
-	match_data["score"] = "%d:%d" % [goals_left, goals_right]
-	match_data["played"] = true
+	var idx  : int = Score.current_match
+	var m    : Dictionary = Score.matches[idx]
+	var home : String = String(m["home"])
+	var away : String = String(m["away"])
+	var player : String = Score.player_team_name
+	var player_is_home : bool = (home == player)
 
-	# Определяем команды
-	var player_team_name : String = match_data["home"]      # игрок — домашняя
-	var opponent_team_name : String = match_data["away"]
+	# --- фиксируем результат в данные матча ---
+	m["score"]  = "%d:%d" % [goals_home, goals_away]
+	m["played"] = true
 
-	var player_team : Dictionary = get_team_dict(player_team_name)
-	var opponent_team : Dictionary = get_team_dict(opponent_team_name)
+	# --- обновляем статистику команд ---
+	var ht : Dictionary = Score.get_team_dict(home)
+	var at : Dictionary = Score.get_team_dict(away)
+	ht["goals_for"]     += goals_home
+	ht["goals_against"] += goals_away
+	at["goals_for"]     += goals_away
+	at["goals_against"] += goals_home
 
-	# Обновляем статистику
-	player_team["goals_for"]     += goals_left
-	player_team["goals_against"] += goals_right
-	opponent_team["goals_for"]     += goals_right
-	opponent_team["goals_against"] += goals_left
-
-	if goals_left > goals_right:
-		player_team["points"] += 3
-	elif goals_left < goals_right:
-		opponent_team["points"] += 3
+	if goals_home > goals_away:
+		ht["points"] += 3
+	elif goals_home < goals_away:
+		at["points"] += 3
 	else:
-		player_team["points"]   += 1
-		opponent_team["points"] += 1
+		ht["points"] += 1
+		at["points"] += 1
 
-	# Сбрасываем счёт
-	Score.left  = 0
-	Score.right = 0
+	# --- корректное отображение счёта в UI ---
+	if player_is_home:
+		Score.left  = goals_home
+		Score.right = goals_away
+	else:
+		Score.left  = goals_away
+		Score.right = goals_home
 
-	# Возвращаемся в календарь
+	# --- симулируем матчи ботов и возвращаемся к календарю ---
+	Score.simulate_bot_matches()
 	get_tree().change_scene_to_file("res://scenes/tournament_calendar.tscn")
-
-func get_team_dict(name : String) -> Dictionary:
-	for team in Score.teams:
-		if team["name"] == name:
-			return team
-	return {}

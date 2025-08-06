@@ -1,0 +1,40 @@
+[gd_scene load_steps=3 format=3 uid="uid://ni5xonhoiv4t"]
+
+[ext_resource type="Script" uid="uid://de732wytliv03" path="res://scenes/final_table.gd" id="1_iws4m"]
+[ext_resource type="FontFile" uid="uid://crbejkyhfw2bi" path="res://fonts/PressStart2P-Regular.ttf" id="2_7y8kr"]
+
+[node name="FinalTable" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_iws4m")
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 632.0
+offset_top = 65.0
+offset_right = 826.0
+offset_bottom = 88.0
+theme_override_fonts/font = ExtResource("2_7y8kr")
+text = "Финальные результаты"
+
+[node name="RowsContainer" type="GridContainer" parent="."]
+unique_name_in_owner = true
+offset_left = 490.0
+offset_top = 263.0
+offset_right = 530.0
+offset_bottom = 303.0
+
+[node name="PlaceLabel" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = 642.0
+offset_top = 450.0
+offset_right = 682.0
+offset_bottom = 473.0
+
+[node name="BackToMenuBtn" type="Button" parent="."]
+unique_name_in_owner = true
+offset_left = 714.0
+offset_top = 647.0
+offset_right = 818.0
+offset_bottom = 678.0
+theme_override_fonts/font = ExtResource("2_7y8kr")
+text = "В меню"
