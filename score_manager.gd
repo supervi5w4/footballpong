@@ -6,6 +6,8 @@ var right: int = 0
 var ad_shown: bool = false
 var teams: Array = []
 var matches: Array = []
+var current_match : int = -1  # индекс текущего матча
+
 
 func generate_matches() -> void:
 	matches.clear()
