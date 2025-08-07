@@ -1,24 +1,76 @@
-[gd_scene load_steps=2 format=3 uid="uid://brok84e42ruxw"]
+[gd_scene load_steps=4 format=3 uid="uid://c0llg8e3m11hw"]
 
-[sub_resource type="GDScript" id="GDScript_2w4xv"]
-script/source = "extends Node2D
-"
+[ext_resource type="Script" uid="uid://bpqmoh6gll5tg" path="res://scenes/scoreboard.gd" id="1_0ehia"]
+[ext_resource type="Texture2D" uid="uid://cnwuj3lcbmlf7" path="res://assets/gfx/ChatGPT Image 7 авг. 2025 г., 14_44_47.png" id="1_vf35h"]
+[ext_resource type="FontFile" uid="uid://crbejkyhfw2bi" path="res://fonts/PressStart2P-Regular.ttf" id="2_3bigg"]
 
-[node name="Scoreboard" type="Node2D"]
-script = SubResource("GDScript_2w4xv")
+[node name="Scoreboard" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_0ehia")
 
-[node name="Background" type="TextureRect" parent="."]
+[node name="TextureRect" type="TextureRect" parent="."]
 offset_right = 40.0
 offset_bottom = 40.0
+texture = ExtResource("1_vf35h")
 
-[node name="TeamNameLeft" type="Label" parent="."]
-offset_right = 40.0
-offset_bottom = 23.0
+[node name="NameRight" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 93.0
+offset_top = 428.0
+offset_right = 498.0
+offset_bottom = 473.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("2_3bigg")
+theme_override_font_sizes/font_size = 45
 
-[node name="Label2" type="Label" parent="."]
-offset_right = 40.0
-offset_bottom = 23.0
+[node name="TimeTop" type="Label" parent="."]
+layout_mode = 2
+offset_left = 1036.0
+offset_top = 413.0
+offset_right = 1351.0
+offset_bottom = 458.0
+theme_override_fonts/font = ExtResource("2_3bigg")
+theme_override_font_sizes/font_size = 45
 
-[node name="Label" type="Label" parent="."]
-offset_right = 40.0
-offset_bottom = 23.0
+[node name="ScoreLeft" type="Label" parent="."]
+layout_mode = 2
+offset_left = 560.0
+offset_top = 425.0
+offset_right = 965.0
+offset_bottom = 470.0
+theme_override_fonts/font = ExtResource("2_3bigg")
+theme_override_font_sizes/font_size = 45
+
+[node name="ScoreRight" type="Label" parent="."]
+layout_mode = 2
+offset_left = 543.0
+offset_top = 614.0
+offset_right = 993.0
+offset_bottom = 659.0
+theme_override_fonts/font = ExtResource("2_3bigg")
+theme_override_font_sizes/font_size = 45
+
+[node name="TimeBottom" type="Label" parent="."]
+layout_mode = 2
+offset_left = 977.0
+offset_top = 622.0
+offset_right = 1427.0
+offset_bottom = 667.0
+theme_override_fonts/font = ExtResource("2_3bigg")
+theme_override_font_sizes/font_size = 45
+
+[node name="NameLeft" type="Label" parent="."]
+layout_mode = 0
+offset_left = 139.0
+offset_top = 419.0
+offset_right = 499.0
+offset_bottom = 464.0
+theme_override_fonts/font = ExtResource("2_3bigg")
+theme_override_font_sizes/font_size = 45

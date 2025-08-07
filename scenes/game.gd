@@ -1,5 +1,6 @@
 extends Node2D
 
+
 @onready var ball          := $Ball
 @onready var player_paddle := $PlayerPaddle   # Имя узла слева!
 @onready var ai_paddle     := $AiPaddle       # Имя узла справа!
