@@ -35,9 +35,6 @@ func _on_half_finished() -> void:
 
 func _finalize_match() -> void:
 	# --- определяем сторону игрока ---
-	var goals_home : int = Score.left
-	var goals_away : int = Score.right
-
 	var idx  : int = Score.current_match
 	var m    : Dictionary = Score.matches[idx]
 	var home : String = String(m["home"])
@@ -45,18 +42,39 @@ func _finalize_match() -> void:
 	var player : String = Score.player_team_name
 	var player_is_home : bool = (home == player)
 
+	# Получаем счёт в интерфейсе (левый/правый) — это счёт игрока и ИИ.
+	# В первом круге игрок выступает за домашнюю команду и его голы записываются в Score.left,
+	# во втором круге игрок играет в гостях и его голы записываются в Score.right.
+	var goals_left  : int = Score.left
+	var goals_right : int = Score.right
+
+	# --- определяем счёт для домашней и гостевой команды ---
+	# Если игрок является домашней командой, то левый счёт соответствует хозяевам,
+	# иначе хозяева — это ИИ (правый счёт), а гости — игрок (левый счёт).
+	var goals_home : int
+	var goals_away : int
+	if player_is_home:
+		goals_home = goals_left
+		goals_away = goals_right
+	else:
+		goals_home = goals_right
+		goals_away = goals_left
+
 	# --- фиксируем результат в данные матча ---
+	# В календаре турнирных матчей счёт отображается в формате «голы хозяев : голы гостей».
 	m["score"]  = "%d:%d" % [goals_home, goals_away]
 	m["played"] = true
 
 	# --- обновляем статистику команд ---
 	var ht : Dictionary = Score.get_team_dict(home)
 	var at : Dictionary = Score.get_team_dict(away)
+	# Обновляем количество забитых и пропущенных мячей для хозяев и гостей
 	ht["goals_for"]     += goals_home
 	ht["goals_against"] += goals_away
 	at["goals_for"]     += goals_away
 	at["goals_against"] += goals_home
 
+	# Начисляем очки за победу/ничью/поражение
 	if goals_home > goals_away:
 		ht["points"] += 3
 	elif goals_home < goals_away:
@@ -66,6 +84,7 @@ func _finalize_match() -> void:
 		at["points"] += 1
 
 	# --- корректное отображение счёта в UI ---
+	# UI всегда отображает счёт с точки зрения игрока: слева — его голы, справа — голы соперника.
 	if player_is_home:
 		Score.left  = goals_home
 		Score.right = goals_away

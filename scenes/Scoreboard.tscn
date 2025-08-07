@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3 uid="uid://brok84e42ruxw"]
+
+[sub_resource type="GDScript" id="GDScript_2w4xv"]
+script/source = "extends Node2D
+"
+
+[node name="Scoreboard" type="Node2D"]
+script = SubResource("GDScript_2w4xv")
+
+[node name="Background" type="TextureRect" parent="."]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TeamNameLeft" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="Label2" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="Label" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 23.0

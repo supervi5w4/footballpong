@@ -104,7 +104,8 @@ func _on_simulate_pressed() -> void:
 			else:
 				goals_left = away_goals
 				goals_right = home_goals
-			m["score"] = "%d:%d" % [goals_left, goals_right]
+			# Счёт, сохраняемый в календаре, всегда отображает «голевые хозяев : голевые гостей».
+			m["score"] = "%d:%d" % [home_goals, away_goals]
 			m["played"] = true
 			var pt : Dictionary = Score.get_team_dict(player)
 			var ot_name : String
