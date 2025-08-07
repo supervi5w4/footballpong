@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://8wkf1f060q6x"]
+[gd_scene load_steps=22 format=3 uid="uid://8wkf1f060q6x"]
 
 [ext_resource type="Script" uid="uid://2xoilbwedro3" path="res://scenes/game.gd" id="1_gee14"]
 [ext_resource type="Texture2D" uid="uid://37rfb12sxmf4" path="res://assets/gfx/field.png" id="1_uwrxv"]
@@ -12,7 +12,6 @@
 [ext_resource type="FontFile" uid="uid://crbejkyhfw2bi" path="res://fonts/PressStart2P-Regular.ttf" id="10_kvpfn"]
 [ext_resource type="Script" uid="uid://cwbcr0civ3mn4" path="res://scenes/tournament_game.gd" id="12_dinhu"]
 [ext_resource type="Texture2D" uid="uid://dprt5p2umwgvv" path="res://assets/gfx/gazaev.png" id="13_kvuet"]
-[ext_resource type="PackedScene" uid="uid://c0llg8e3m11hw" path="res://scenes/Scoreboard.tscn" id="13_trtic"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_yqjtg"]
 size = Vector2(1932, 284)
@@ -124,7 +123,6 @@ player_path = NodePath("../PlayerPaddle")
 
 [node name="GoalAreaRight" type="Area2D" parent="."]
 script = ExtResource("6_u5sy4")
-is_right_goal = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="GoalAreaRight"]
 position = Vector2(1673.25, 531.5)
@@ -146,18 +144,16 @@ stream = ExtResource("6_p57ef")
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="ScoreboardBG" type="TextureRect" parent="UI"]
-visible = false
 light_mask = 4
 visibility_layer = 4
-offset_left = 726.0
-offset_top = 23.0
-offset_right = 1750.0
-offset_bottom = 1047.0
+offset_left = 649.0
+offset_top = 28.0
+offset_right = 2185.0
+offset_bottom = 1052.0
 scale = Vector2(0.298335, 0.302808)
 texture = ExtResource("9_vtaks")
 
 [node name="ScoreLeft" type="Label" parent="UI"]
-visible = false
 offset_left = 767.0
 offset_top = 135.0
 offset_right = 867.0
@@ -167,7 +163,6 @@ theme_override_font_sizes/font_size = 100
 text = "0"
 
 [node name="ScoreRight" type="Label" parent="UI"]
-visible = false
 offset_left = 900.0
 offset_top = 133.0
 offset_right = 1000.0
@@ -190,12 +185,6 @@ offset_left = 761.0
 offset_top = 289.0
 offset_right = 801.0
 offset_bottom = 312.0
-
-[node name="Scoreboard" parent="UI" instance=ExtResource("13_trtic")]
-offset_left = 651.0
-offset_top = -22.0
-offset_right = 651.0
-offset_bottom = -22.0
 
 [node name="SpawnPoint" type="Marker2D" parent="."]
 position = Vector2(880, 529)
