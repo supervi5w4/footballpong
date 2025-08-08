@@ -21,7 +21,7 @@ func _ready() -> void:
 		var score: Object = Engine.get_singleton("Score")
 		if score.has_signal("score_changed"):
 			score.score_changed.connect(_update_scoreboard)
-		_update_scoreboard()
+	reset_round()
 
 
 func _update_scoreboard(_left: int = 0, _right: int = 0) -> void:
