@@ -112,6 +112,12 @@ func _finalize_match() -> void:
 			ht["points"] += 1
 			at["points"] += 1
 
-	# --- Завершение: симулируем ботов и возвращаемся к календарю ---
-	Score.simulate_bot_matches()
-	get_tree().change_scene_to_file("res://scenes/tournament_calendar.tscn")
+        # --- Завершение матча ---
+        if Score.rounds.is_empty():
+                # Быстрая игра: возвращаемся в меню, турнирных данных нет
+                get_tree().change_scene_to_file("res://scenes/menu.tscn")
+                return
+
+        # Турнир: симулируем остальные матчи и открываем календарь
+        Score.simulate_bot_matches()
+        get_tree().change_scene_to_file("res://scenes/tournament_calendar.tscn")
