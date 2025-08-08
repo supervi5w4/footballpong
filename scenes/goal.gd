@@ -15,10 +15,6 @@ func _ready() -> void:
 		var half_width: float = view_rect.size.x * 0.5
 		is_right_goal = global_position.x > half_width
 
-	# Подключаем сигнал
-	if not is_connected("body_entered", Callable(self, "_on_body_entered")):
-		body_entered.connect(_on_body_entered)
-
 func _on_body_entered(body: Node) -> void:
 	# Только для мяча
 	if not (body is RigidBody2D and body.is_in_group("ball")):
