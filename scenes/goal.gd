@@ -15,10 +15,11 @@ extends Area2D
 @onready var _sound: AudioStreamPlayer = get_parent().get_node_or_null("GoalSound")
 
 func _ready() -> void:
-	# Определяем сторону ворот автоматически, если не в редакторе
+	# Определяем сторону ворот автоматически по позиции коллизии
 	if not Engine.is_editor_hint():
+		var shape_pos: float = ($CollisionShape2D as CollisionShape2D).global_position.x
 		var half_width := get_viewport_rect().size.x * 0.5
-		is_right_goal = global_position.x > half_width
+		is_right_goal = shape_pos > half_width
 
 func _on_body_entered(body: Node) -> void:
 	# Реагируем только на мяч

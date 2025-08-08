@@ -122,20 +122,18 @@ ball_path = NodePath("../Ball")
 player_path = NodePath("../PlayerPaddle")
 
 [node name="GoalAreaRight" type="Area2D" parent="."]
+position = Vector2(1673.25, 531.5)
 script = ExtResource("6_u5sy4")
+is_right_goal = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="GoalAreaRight"]
-position = Vector2(1673.25, 531.5)
-scale = Vector2(0.719435, 0.941814)
 shape = SubResource("RectangleShape2D_vtaks")
 
 [node name="GoalAreaLeft" type="Area2D" parent="."]
-scale = Vector2(0.910295, 0.999548)
+position = Vector2(93.3764, 532.241)
 script = ExtResource("6_u5sy4")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="GoalAreaLeft"]
-position = Vector2(93.3764, 532.241)
-scale = Vector2(0.725053, 1.06231)
 shape = SubResource("RectangleShape2D_vtaks")
 
 [node name="GoalSound" type="AudioStreamPlayer" parent="."]
