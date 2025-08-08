@@ -21,12 +21,30 @@ func _ready() -> void:
 
 	# --- Определяем, играет ли игрок дома (слева) ---
 	var idx: int = Score.current_match
+	var s: float = 0.8
 	if idx >= 0 and idx < Score.matches.size():
 		var m: Dictionary = Score.matches[idx]
 		var home: String = String(m["home"])
 		Score.player_is_home = (home == Score.player_team_name)
+
+		var player_is_home: bool = Score.player_is_home
+		var opponent_name: String = String(m["away"]) if player_is_home else String(m["home"])
+		var opponent: Dictionary = Score.get_team_dict(opponent_name)
+
+		s = float(opponent.get("strength", 0.8))
+		s = clamp(s, 0.6, 0.99)
 	else:
 		Score.player_is_home = true  # по умолчанию
+		s = clamp(s, 0.6, 0.99)
+
+	var ai = game_node.get_node("AiPaddle") as AiPaddle
+	ai.skill = s
+	if s > 0.9:
+		ai.behaviour_style = "aggressive"
+	elif s > 0.8:
+		ai.behaviour_style = "balanced"
+	else:
+		ai.behaviour_style = "defensive"
 
 	current_half = 0
 	_start_next_half()
