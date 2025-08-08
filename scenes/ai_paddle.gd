@@ -1,6 +1,6 @@
 # ------------------------------------------------------------
 # AiPaddle.gd — Advanced AI for Football Pong
-# Godot 4.4.1 | GDScript 2.0 | v2.5 FINAL
+# Godot 4.4.1 | GDScript 2.0 | v2.5 FINAL + Retreat
 # ------------------------------------------------------------
 extends CharacterBody2D
 class_name AiPaddle
@@ -38,7 +38,7 @@ const STYLE_DB: Dictionary = {
 
 const Utils: Script = preload("res://scripts/utils.gd")
 
-enum State { DEFEND, INTERCEPT, BLOCK_PLAYER, ATTACK, FAKE, DODGE }
+enum State { DEFEND, INTERCEPT, BLOCK_PLAYER, ATTACK, FAKE, DODGE, RETREAT }
 var _state: State = State.DEFEND
 
 # ---------------- Runtime Variables ----------------
@@ -109,9 +109,13 @@ func _think() -> void:
 	var ball_behind: bool = _is_ball_behind()
 	var heading_to_goal: bool = (defends_right_side and _ball.linear_velocity.x > 0.0) or (not defends_right_side and _ball.linear_velocity.x < 0.0)
 
-	if ball_behind and heading_to_goal:
-		_state = State.DODGE
-		_target_pos = _dodge_pos(ball_pos)
+	if ball_behind:
+		_state = State.DODGE if heading_to_goal else State.RETREAT
+		match _state:
+			State.DODGE:
+				_target_pos = _dodge_pos(ball_pos)
+			State.RETREAT:
+				_target_pos = _retreat_pos()
 	else:
 		var toward_player: Vector2 = (player_pos - ball_pos).normalized()
 		var toward_me: Vector2 = (global_position - ball_pos).normalized()
@@ -141,6 +145,8 @@ func _think() -> void:
 				State.DODGE:
 					if not ball_behind:
 						_state = State.DEFEND
+				State.RETREAT:
+					_state = State.DEFEND
 
 			match _state:
 				State.DEFEND:
@@ -156,6 +162,8 @@ func _think() -> void:
 					_target_pos = _attack_pos(ball_pos)
 				State.DODGE:
 					_target_pos = _dodge_pos(ball_pos)
+				State.RETREAT:
+					_target_pos = _retreat_pos()
 
 	_add_error(style)
 	_clamp_advancement()
@@ -258,6 +266,10 @@ func _dodge_pos(ball_pos: Vector2) -> Vector2:
 	var target_y: float = clamp(global_position.y + dir_y * 400.0, 80.0, float(FIELD_SIZE.y - 80.0))
 	return Vector2(global_position.x, target_y)
 
+func _retreat_pos() -> Vector2:
+	var my_goal: Vector2 = goal_right if defends_right_side else goal_left
+	return my_goal.lerp(start_pos, 0.2)
+
 func _add_error(style: Dictionary) -> void:
 	var r: float = ERROR_BASE_RADIUS * (1.0 - skill) * float(style.error_mult)
 	_target_pos += Vector2(randf_range(-r, r), randf_range(-r, r))
@@ -277,8 +289,11 @@ func _move() -> void:
 		return
 	dir = dir.normalized()
 	var speed: float = BASE_SPEED * float(style.speed_mul) * lerp(0.6, 1.0, skill)
-	if _state == State.ATTACK:
-		speed *= 1.2
+	match _state:
+		State.ATTACK:
+			speed *= 1.2
+		State.RETREAT:
+			speed *= 0.8
 	velocity = dir * speed
 	move_and_slide()
 
