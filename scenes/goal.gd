@@ -5,7 +5,7 @@ extends Area2D
 
 @export var is_right_goal: bool = false   # true → эти ворота справа (бот)
 
-@onready var _score := get_node("/root/Score")
+@onready var _score = Score
 @onready var _sound := get_parent().get_node_or_null("GoalSound") as AudioStreamPlayer
 
 func _ready() -> void:
@@ -20,11 +20,12 @@ func _on_body_entered(body: Node) -> void:
 	if not (body is RigidBody2D and body.is_in_group("ball")):
 		return
 
-	# Обновляем счёт
-	if is_right_goal:
-		_score.left += 1
-	else:
-		_score.right += 1
+		# Обновляем счёт
+	if _score:
+		if is_right_goal:
+			_score.left += 1
+		else:
+			_score.right += 1
 
 	if _sound:
 		_sound.play()
