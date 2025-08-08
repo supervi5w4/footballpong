@@ -13,17 +13,33 @@ extends Node
 """
 
 # ---------- 1. Счёт текущего матча ----------
-var left:  int = 0
-var right: int = 0
-var ad_shown: bool = false
+signal score_changed(left, right)
 
-# ---------- 2. Данные турнира ----------
+var left: int:
+	get:
+		return _left
+	set(value):
+		_left = value
+		score_changed.emit(left, right)
+
+var right: int:
+	get:
+		return _right
+	set(value):
+		_right = value
+		score_changed.emit(left, right)
+
+var ad_shown: bool = false
 var player_team_name: String = ""
-var teams:   Array = []       # Array<Dictionary>
-var matches: Array = []       # Array<Dictionary>
-var rounds:  Array = []       # Array<Array>
-var current_round:  int = 0
-var current_match:  int = -1
+var teams: Array = []  # Array<Dictionary>
+var matches: Array = []  # Array<Dictionary>
+var rounds: Array = []  # Array<Array>
+var current_round: int = 0
+var current_match: int = -1
+
+var _left: int = 0
+var _right: int = 0
+
 
 # ---------- 3. Генерация календаря ----------
 func generate_matches() -> void:
@@ -40,7 +56,7 @@ func generate_matches() -> void:
 		names.append("__BYE__")
 
 	var n: int = names.size()
-	var half: int = n >> 1     # безопасное целочисленное деление
+	var half: int = n >> 1  # безопасное целочисленное деление
 
 	# ---- первый круг ----
 	for _r in range(n - 1):
@@ -49,12 +65,9 @@ func generate_matches() -> void:
 			var home_name := names[i]
 			var away_name := names[n - 1 - i]
 			if home_name != "__BYE__" and away_name != "__BYE__":
-				matches.append({
-					"home": home_name,
-					"away": away_name,
-					"played": false,
-					"score": "—"
-				})
+				matches.append(
+					{"home": home_name, "away": away_name, "played": false, "score": "—"}
+				)
 				round_idxs.append(matches.size() - 1)
 		rounds.append(round_idxs)
 
@@ -67,17 +80,20 @@ func generate_matches() -> void:
 		var mirror: Array[int] = []
 		for idx in old_round:
 			var m: Dictionary = matches[idx]
-			matches.append({
-				"home": String(m["away"]),
-				"away": String(m["home"]),
-				"played": false,
-				"score": "—"
-			})
+			matches.append(
+				{
+					"home": String(m["away"]),
+					"away": String(m["home"]),
+					"played": false,
+					"score": "—"
+				}
+			)
 			mirror.append(matches.size() - 1)
 		rounds.append(mirror)
 
-	current_round  = 0
-	current_match  = -1
+	current_round = 0
+	current_match = -1
+
 
 # ---------- 4. Вспомогательные ----------
 func get_team_dict(t_name: String) -> Dictionary:
@@ -86,11 +102,13 @@ func get_team_dict(t_name: String) -> Dictionary:
 			return t
 	return {}
 
+
 func is_tournament_over() -> bool:
 	for m in matches:
 		if not m["played"]:
 			return false
 	return true
+
 
 # ---------- 5. Симуляция матчей ботов тура ----------
 func simulate_bot_matches() -> void:
@@ -103,6 +121,7 @@ func simulate_bot_matches() -> void:
 		if m["home"] == player_team_name or m["away"] == player_team_name:
 			continue
 		_simulate_single_match(idx)
+
 
 # ---------- 6. Симуляция одного матча ----------
 func _simulate_single_match(index: int) -> void:
@@ -132,16 +151,16 @@ func _simulate_single_match(index: int) -> void:
 	elif rng.randf() < 0.10:
 		gh += 1
 
-	m["score"]  = "%d:%d" % [gh, ga]
+	m["score"] = "%d:%d" % [gh, ga]
 	m["played"] = true
 
 	var ht: Dictionary = get_team_dict(home)
 	var at: Dictionary = get_team_dict(away)
 
-	ht["goals_for"]      = int(ht.get("goals_for", 0))      + gh
-	ht["goals_against"]  = int(ht.get("goals_against", 0))  + ga
-	at["goals_for"]      = int(at.get("goals_for", 0))      + ga
-	at["goals_against"]  = int(at.get("goals_against", 0))  + gh
+	ht["goals_for"] = int(ht.get("goals_for", 0)) + gh
+	ht["goals_against"] = int(ht.get("goals_against", 0)) + ga
+	at["goals_for"] = int(at.get("goals_for", 0)) + ga
+	at["goals_against"] = int(at.get("goals_against", 0)) + gh
 
 	if gh > ga:
 		ht["points"] = int(ht.get("points", 0)) + 3
@@ -151,16 +170,16 @@ func _simulate_single_match(index: int) -> void:
 		ht["points"] = int(ht.get("points", 0)) + 1
 		at["points"] = int(at.get("points", 0)) + 1
 
+
 # ---------- 7. Генерация правдоподобного счёта ----------
 func _random_goals(rng: RandomNumberGenerator) -> int:
 	var r := rng.randf()
 	if r < 0.30:
-		return rng.randi_range(0, 1)     # 0–1
-	elif r < 0.60:
+		return rng.randi_range(0, 1)  # 0–1
+	if r < 0.60:
 		return 2
-	elif r < 0.90:
+	if r < 0.90:
 		return 3
-	elif r < 0.98:
+	if r < 0.98:
 		return 4
-	else:
-		return 5 + rng.randi_range(0, 2) # 5–7 (редко)
+	return 5 + rng.randi_range(0, 2)  # 5–7 (редко)
