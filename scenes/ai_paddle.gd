@@ -15,6 +15,10 @@ var behaviour_style: String = "balanced"
 @export var player_path: NodePath
 @export var defends_right_side: bool = true
 
+@export var max_bounces: int = 3
+@export var wall_bounce_damp: float = 0.9
+@export var paddle_bounce_damp: float = 0.8
+
 @export var goal_left:  Vector2 = Vector2(0, 540)
 @export var goal_right: Vector2 = Vector2(1920, 540)
 
@@ -35,7 +39,7 @@ const STYLE_DB: Dictionary = {
 
 const Utils: Script = preload("res://scripts/utils.gd")
 
-enum State { DEFEND, INTERCEPT, SECOND_BOUNCE, BLOCK_PLAYER, ATTACK, FAKE, DODGE }
+enum State { DEFEND, INTERCEPT, BLOCK_PLAYER, ATTACK, FAKE, DODGE }
 var _state: State = State.DEFEND
 
 # ----------------- Runtime Vars -----------------
@@ -102,64 +106,63 @@ func _check_first_hit_reset() -> void:
 
 # ---------------- THINK ----------------
 func _think() -> void:
-	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
-	var ball_pos: Vector2 = _ball.global_position
-	var player_pos: Vector2 = _player.global_position
-	var ball_dir: Vector2 = _ball.linear_velocity.normalized()
+        var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
+        var ball_pos: Vector2 = _ball.global_position
+        var player_pos: Vector2 = _player.global_position
+        var ball_dir: Vector2 = _ball.linear_velocity.normalized()
 
-	# --- quick risk checks ---
-	var ball_behind: bool = _is_ball_behind()
-	var heading_to_goal: bool = (defends_right_side and _ball.linear_velocity.x > 0.0) or \
-								(not defends_right_side and _ball.linear_velocity.x < 0.0)
+        # --- quick risk checks ---
+        var ball_behind: bool = _is_ball_behind()
+        var heading_to_goal: bool = (defends_right_side and _ball.linear_velocity.x > 0.0) or \
+                                                                (not defends_right_side and _ball.linear_velocity.x < 0.0)
 
-	if ball_behind and heading_to_goal:
-		_state = State.DODGE
-	else:
-		# FSM decisions
-		var toward_player: Vector2 = (player_pos - ball_pos).normalized()
-		var toward_me:     Vector2 = (global_position - ball_pos).normalized()
-		var b_to_player: bool = ball_dir.dot(toward_player) > 0.7
-		var b_to_me:     bool = ball_dir.dot(toward_me)     > 0.7
+        if ball_behind and heading_to_goal:
+                _state = State.DODGE
+                _target_pos = _dodge_pos(ball_pos)
+        else:
+                var toward_player: Vector2 = (player_pos - ball_pos).normalized()
+                var toward_me:     Vector2 = (global_position - ball_pos).normalized()
+                var b_to_player: bool = ball_dir.dot(toward_player) > 0.7
+                var b_to_me:     bool = ball_dir.dot(toward_me)     > 0.7
 
-		match _state:
-			State.DEFEND:
-				_state = State.INTERCEPT if b_to_me else State.BLOCK_PLAYER if b_to_player and randf() < 0.5 else State.ATTACK
-			State.INTERCEPT:
-				_state = State.FAKE if randf() < 0.25 else State.SECOND_BOUNCE if not b_to_me else _state
-			State.SECOND_BOUNCE:
-				_state = State.INTERCEPT if b_to_me else State.ATTACK if not b_to_player else _state
-			State.BLOCK_PLAYER:
-				if not b_to_player:
-					_state = State.ATTACK
-			State.FAKE:
-				if _fake_timer <= 0.0:
-					_state = State.INTERCEPT
-			State.ATTACK:
-				if b_to_me:
-					_state = State.INTERCEPT
-				elif b_to_player:
-					_state = State.BLOCK_PLAYER
-			State.DODGE:
-				if not ball_behind:
-					_state = State.DEFEND
+                if not _is_on_my_side(ball_pos) or not b_to_me:
+                        _state = State.INTERCEPT
+                        _target_pos = _predict_multi_bounce(ball_pos, _ball.linear_velocity, max_bounces)
+                else:
+                        match _state:
+                                State.DEFEND:
+                                        _state = State.INTERCEPT if b_to_me else State.BLOCK_PLAYER if b_to_player and randf() < 0.5 else State.ATTACK
+                                State.INTERCEPT:
+                                        _state = State.FAKE if randf() < 0.25 else _state
+                                State.BLOCK_PLAYER:
+                                        if not b_to_player:
+                                                _state = State.ATTACK
+                                State.FAKE:
+                                        if _fake_timer <= 0.0:
+                                                _state = State.INTERCEPT
+                                State.ATTACK:
+                                        if b_to_me:
+                                                _state = State.INTERCEPT
+                                        elif b_to_player:
+                                                _state = State.BLOCK_PLAYER
+                                State.DODGE:
+                                        if not ball_behind:
+                                                _state = State.DEFEND
 
-	# --- choose target ---
-	match _state:
-		State.DEFEND:
-			_target_pos = _goal_pos(ball_pos)
-		State.INTERCEPT:
-			_target_pos = _predict_intercept() if _is_on_my_side(ball_pos) else ball_pos
-		State.SECOND_BOUNCE:
-			_target_pos = _predict_second_bounce()
-		State.BLOCK_PLAYER:
-			_target_pos = _block_pos(player_pos)
-		State.FAKE:
-			_target_pos = ball_pos + Vector2(randf_range(-150.0,150.0), randf_range(-100.0,100.0))
-			_fake_timer = 0.25
-		State.ATTACK:
-			_target_pos = _attack_pos(ball_pos)
-		State.DODGE:
-			_target_pos = _dodge_pos(ball_pos)
+                        match _state:
+                                State.DEFEND:
+                                        _target_pos = _goal_pos(ball_pos)
+                                State.INTERCEPT:
+                                        _target_pos = _predict_intercept()
+                                State.BLOCK_PLAYER:
+                                        _target_pos = _block_pos(player_pos)
+                                State.FAKE:
+                                        _target_pos = ball_pos + Vector2(randf_range(-150.0,150.0), randf_range(-100.0,100.0))
+                                        _fake_timer = 0.25
+                                State.ATTACK:
+                                        _target_pos = _attack_pos(ball_pos)
+                                State.DODGE:
+                                        _target_pos = _dodge_pos(ball_pos)
 
 	_add_error(style)
 	_clamp_advancement()
@@ -179,13 +182,60 @@ func _block_pos(player_pos: Vector2) -> Vector2:
 	return Vector2(player_pos.x, clamp(player_pos.y + offset_y, 80.0, float(FIELD_SIZE.y - 80)))
 
 func _predict_second_bounce() -> Vector2:
-	var wall_x: float = float(FIELD_SIZE.x) if defends_right_side else 0.0
-	var from: Vector2 = _ball.global_position
-	var vel: Vector2 = _ball.linear_velocity.normalized()
-	var dist: float = abs(wall_x - from.x)
-	var first_hit: Vector2 = from + vel * dist
-	var after_bounce: Vector2 = Vector2(-vel.x, vel.y)
-	return first_hit + after_bounce * dist * 0.3
+        var wall_x: float = float(FIELD_SIZE.x) if defends_right_side else 0.0
+        var from: Vector2 = _ball.global_position
+        var vel: Vector2 = _ball.linear_velocity.normalized()
+        var dist: float = abs(wall_x - from.x)
+        var first_hit: Vector2 = from + vel * dist
+        var after_bounce: Vector2 = Vector2(-vel.x, vel.y)
+        return first_hit + after_bounce * dist * 0.3
+
+func _predict_multi_bounce(ball_pos: Vector2, velocity: Vector2, max_bounces: int) -> Vector2:
+        var pos: Vector2 = ball_pos
+        var vel: Vector2 = velocity
+        var top: float = 0.0
+        var bottom: float = float(FIELD_SIZE.y)
+        var target_x: float = global_position.x
+        var player_x: float = _player.global_position.x
+        var b: int = 0
+        while b < max_bounces:
+                var toward_me: bool = (defends_right_side and vel.x > 0.0) or (not defends_right_side and vel.x < 0.0)
+                if toward_me:
+                        var t_to_me: float = (target_x - pos.x) / vel.x
+                        if t_to_me >= 0.0:
+                                pos += vel * t_to_me
+                                return Vector2(target_x, clamp(pos.y, 80.0, bottom - 80.0))
+
+                var t_top: float = INF
+                var t_bottom: float = INF
+                if vel.y < 0.0:
+                        t_top = (top - pos.y) / vel.y
+                elif vel.y > 0.0:
+                        t_bottom = (bottom - pos.y) / vel.y
+                var t_wall: float = min(t_top, t_bottom)
+
+                var toward_player: bool = (defends_right_side and vel.x < 0.0) or (not defends_right_side and vel.x > 0.0)
+                var t_player: float = INF
+                if toward_player:
+                        t_player = (player_x - pos.x) / vel.x
+                        if t_player < 0.0:
+                                t_player = INF
+
+                var t_next: float = min(t_wall, t_player)
+                if t_next == INF:
+                        break
+                pos += vel * t_next
+                if t_next == t_wall:
+                        vel.y = -vel.y * wall_bounce_damp
+                else:
+                        vel.x = -vel.x * paddle_bounce_damp
+                b += 1
+
+        if is_zero_approx(vel.x):
+                return Vector2(target_x, clamp(pos.y, 80.0, bottom - 80.0))
+        var t_final: float = (target_x - pos.x) / vel.x
+        pos += vel * t_final
+        return Vector2(target_x, clamp(pos.y, 80.0, bottom - 80.0))
 
 # ---------- Prediction / Dodge helpers ----------
 func _is_on_my_side(pos: Vector2) -> bool:
