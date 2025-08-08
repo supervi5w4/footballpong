@@ -9,6 +9,7 @@ class_name AiPaddle
 @export var skill: float = 0.85
 @export_enum("aggressive", "balanced", "defensive")
 var behaviour_style: String = "balanced"
+@export var aggression: float = 0.5
 
 @export var ball_path: NodePath
 @export var player_path: NodePath
@@ -144,8 +145,9 @@ func _think() -> void:
 			_target_pos = _predict_multi_bounce(ball_pos, _ball.linear_velocity, max_bounces)
 		else:
 			match _state:
-				State.DEFEND:
-					_state = State.INTERCEPT if b_to_me else State.BLOCK_PLAYER if b_to_player and randf() < 0.5 else State.ATTACK
+                                State.DEFEND:
+                                        var block_chance: float = lerp(0.7, 0.2, aggression)
+                                        _state = State.INTERCEPT if b_to_me else State.BLOCK_PLAYER if b_to_player and randf() < block_chance else State.ATTACK
 				State.INTERCEPT:
 					_state = State.FAKE if randf() < 0.25 else _state
 				State.BLOCK_PLAYER:
@@ -306,8 +308,8 @@ func _retreat_pos() -> Vector2:
 	return my_goal.lerp(start_pos, 0.2)
 
 func _add_error(style: Dictionary) -> void:
-	var r: float = ERROR_BASE_RADIUS * (1.0 - skill) * float(style.error_mult)
-	_target_pos += Vector2(randf_range(-r, r), randf_range(-r, r))
+        var r: float = ERROR_BASE_RADIUS * pow(1.0 - skill, 2.0) * float(style.error_mult)
+        _target_pos += Vector2(randf_range(-r, r), randf_range(-r, r))
 
 func _clamp_advancement() -> void:
 	var limit_x: float = FIELD_SIZE.x * ADVANCE_LIMIT_PROPORTION
@@ -317,16 +319,17 @@ func _clamp_advancement() -> void:
 		_target_pos.x = min(_target_pos.x, FIELD_SIZE.x - limit_x)
 
 func _move() -> void:
-	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
-	var dir: Vector2 = _target_pos - global_position
-	if dir.length() < 2.0:
-		velocity = Vector2.ZERO
-		return
-	dir = dir.normalized()
-	var speed: float = BASE_SPEED * float(style.speed_mul) * lerp(0.6, 1.0, skill)
-	match _state:
-		State.ATTACK:
-			speed *= 1.2
+        var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
+        var dir: Vector2 = _target_pos - global_position
+        if dir.length() < 2.0:
+                velocity = Vector2.ZERO
+                return
+        dir = dir.normalized()
+        var speed_jitter: float = randf_range(1.0 - (1.0 - skill) * 0.3, 1.0 + (1.0 - skill) * 0.3)
+        var speed: float = BASE_SPEED * float(style.speed_mul) * speed_jitter * lerp(0.6, 1.0, skill)
+        match _state:
+                State.ATTACK:
+                        speed *= 1.2
 		State.RETREAT:
 			speed *= 0.8
 		State.HIGH_SPEED_DEFEND:
@@ -337,7 +340,7 @@ func _move() -> void:
 	move_and_slide()
 
 func _schedule_next_think() -> void:
-	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
-	var react: float = REACTION_BASE + (1.0 - skill) * 0.25
-	react *= randf_range(0.8, 1.4) * float(style.error_mult)
-	_time_to_next_think = react
+        var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
+        var react: float = REACTION_BASE + pow(1.0 - skill, 2.0) * 0.4
+        react *= randf_range(0.8, 1.4) * float(style.error_mult)
+        _time_to_next_think = react
