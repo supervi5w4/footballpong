@@ -16,7 +16,7 @@ func _ready() -> void:
 		is_right_goal = global_position.x > half_width
 
 	# Подключаем сигнал
-	if not is_connected("body_entered", Callable(self, "_on_body_entered")):
+	if not body_entered.is_connected(_on_body_entered):
 		body_entered.connect(_on_body_entered)
 
 func _on_body_entered(body: Node) -> void:
