@@ -36,6 +36,7 @@ var matches: Array = []  # Array<Dictionary>
 var rounds: Array = []  # Array<Array>
 var current_round: int = 0
 var current_match: int = -1
+var player_is_home: bool = true  # true -> игрок хозяин, влияет на отображение счёта
 
 var _left: int = 0
 var _right: int = 0
