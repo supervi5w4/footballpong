@@ -6,32 +6,33 @@
 #    - Узлы UI/ScoreLeft и UI/ScoreRight (Label) для табло
 # ------------------------------------------------------------
 
-extends Node2D
 class_name Game
+extends Node2D
 
-@onready var ball: RigidBody2D          = $Ball
+@onready var ball: RigidBody2D = $Ball
 @onready var player_paddle: CharacterBody2D = $PlayerPaddle
-@onready var ai_paddle: CharacterBody2D     = $AiPaddle
-@onready var score_left_label: Label        = $UI/ScoreLeft
-@onready var score_right_label: Label       = $UI/ScoreRight
+@onready var ai_paddle: CharacterBody2D = $AiPaddle
+@onready var score_left_label: Label = $UI/ScoreLeft
+@onready var score_right_label: Label = $UI/ScoreRight
+
 
 func _ready() -> void:
-	# Сразу показываем счет на табло при запуске игры
-	_update_scoreboard()
-	# (Если надо: подписка на сигнал изменения счета – опционально)
-	# Можно добавить сброс счета перед матчем:
-	# Score.left = 0
-	# Score.right = 0
-	# _update_scoreboard()
+	if Engine.has_singleton("Score"):
+		var score: Object = Engine.get_singleton("Score")
+		if score.has_signal("score_changed"):
+			score.score_changed.connect(_update_scoreboard)
+		_update_scoreboard()
 
-func _process(_delta: float) -> void:
-	# Каждый кадр обновляем табло – простой, но рабочий способ
-	_update_scoreboard()
 
-func _update_scoreboard() -> void:
-	# Обновляем надписи табло с актуальным счетом
-	score_left_label.text  = str(Score.left)
-	score_right_label.text = str(Score.right)
+func _update_scoreboard(_left: int = 0, _right: int = 0) -> void:
+	if not Engine.has_singleton("Score"):
+		return
+	if not score_left_label or not score_right_label:
+		return
+	var score: Object = Engine.get_singleton("Score")
+	score_left_label.text = str(score.left)
+	score_right_label.text = str(score.right)
+
 
 func reset_round() -> void:
 	# Возвращаем мяч и ракетки на стартовые позиции
