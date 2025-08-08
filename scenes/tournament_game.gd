@@ -13,6 +13,8 @@ extends Node
 @onready var message_label: Label = game_node.get_node("UI/MessageLabel") as Label
 
 var current_half: int = 0
+var ai: AiPaddle
+var base_skill: float = 0.8
 
 func _ready() -> void:
 	# --- Сброс счёта ---
@@ -38,17 +40,35 @@ func _ready() -> void:
 		s = clamp(s, 0.6, 0.99)
 
 	# --- Настройка ИИ ---
-	var ai = game_node.get_node("AiPaddle") as AiPaddle
-	ai.skill = s
-	if s > 0.9:
-		ai.behaviour_style = "aggressive"
-	elif s > 0.8:
-		ai.behaviour_style = "balanced"
-	else:
-		ai.behaviour_style = "defensive"
+        ai = game_node.get_node("AiPaddle") as AiPaddle
+        base_skill = s
+        ai.skill = s
+        _apply_ai_tuning()
+        Score.score_changed.connect(_on_score_changed)
 
-	current_half = 0
-	_start_next_half()
+        current_half = 0
+        _start_next_half()
+
+func _apply_ai_tuning() -> void:
+        if ai.skill > 0.9:
+                ai.behaviour_style = "aggressive"
+                ai.max_bounces = 5
+                ai.aggression = 0.8
+        elif ai.skill > 0.8:
+                ai.behaviour_style = "balanced"
+                ai.max_bounces = 3
+                ai.aggression = 0.5
+        else:
+                ai.behaviour_style = "defensive"
+                ai.max_bounces = 2
+                ai.aggression = 0.3
+
+func _on_score_changed(left: int, right: int) -> void:
+        var player_goals: int = left if Score.player_is_home else right
+        var ai_goals: int = right if Score.player_is_home else left
+        var diff: int = player_goals - ai_goals
+        ai.skill = clamp(base_skill + diff * 0.1, 0.4, 0.99)
+        _apply_ai_tuning()
 
 func _start_next_half() -> void:
 	current_half += 1
