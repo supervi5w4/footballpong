@@ -1,38 +1,45 @@
-# scenes/game.gd вЂ“ corrected root controller for Football Pong
-#
-# Handles resetting the ball and paddles after each goal.  The original
-# implementation referenced child nodes by names that did not match the
-# scene, which caused the paddles to never reset.  This version searches
-# for both the legacy and current node names to remain robust across
-# variations of the scene.
+# ------------------------------------------------------------
+#  game.gd – Главный скрипт игровой сцены (Game.tscn)
+#  Отвечает за логику раунда, управление мячом и обновление табло
+#  Требует:
+#    - Менеджер счета Score (score_manager.gd, Autoload как "Score")
+#    - Узлы UI/ScoreLeft и UI/ScoreRight (Label) для табло
+# ------------------------------------------------------------
+
 extends Node2D
 class_name Game
 
-@onready var ball: RigidBody2D = $Ball
-var player_paddle: CharacterBody2D
-var ai_paddle: CharacterBody2D
+@onready var ball: RigidBody2D          = $Ball
+@onready var player_paddle: CharacterBody2D = $PlayerPaddle
+@onready var ai_paddle: CharacterBody2D     = $AiPaddle
+@onready var score_left_label: Label        = $UI/ScoreLeft
+@onready var score_right_label: Label       = $UI/ScoreRight
 
 func _ready() -> void:
-	# Locate the player paddle.  Some scenes may name it "PlayerPaddle"
-	# while older versions may use "Player".  Use the first that exists.
-	player_paddle = get_node_or_null("PlayerPaddle")
-	if player_paddle == null:
-		player_paddle = get_node_or_null("Player")
+	# Сразу показываем счет на табло при запуске игры
+	_update_scoreboard()
+	# (Если надо: подписка на сигнал изменения счета – опционально)
+	# Можно добавить сброс счета перед матчем:
+	# Score.left = 0
+	# Score.right = 0
+	# _update_scoreboard()
 
-	# Locate the AI paddle.  Similarly handle both naming conventions.
-	ai_paddle = get_node_or_null("AiPaddle")
-	if ai_paddle == null:
-		ai_paddle = get_node_or_null("AI")
+func _process(_delta: float) -> void:
+	# Каждый кадр обновляем табло – простой, но рабочий способ
+	_update_scoreboard()
+
+func _update_scoreboard() -> void:
+	# Обновляем надписи табло с актуальным счетом
+	score_left_label.text  = str(Score.left)
+	score_right_label.text = str(Score.right)
 
 func reset_round() -> void:
-	# Restart the ball.
-	if ball and ball.has_method("respawn"):
+	# Возвращаем мяч и ракетки на стартовые позиции
+	if ball:
 		ball.respawn()
-
-	# Reset the player paddle to its starting position if the method exists.
 	if player_paddle and player_paddle.has_method("reset_position"):
 		player_paddle.reset_position()
-
-	# Reset the AI paddle as well.
 	if ai_paddle and ai_paddle.has_method("reset_position"):
 		ai_paddle.reset_position()
+	# Сбросить табло после раунда (по желанию)
+	_update_scoreboard()
