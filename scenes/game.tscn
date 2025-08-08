@@ -114,7 +114,7 @@ shape = SubResource("RectangleShape2D_0tnpc")
 [node name="PlayerPaddle" parent="." instance=ExtResource("4_lbhrr")]
 position = Vector2(173, 529)
 
-[node name="AiPaddle" parent="." groups=["ball"] instance=ExtResource("5_iywne")]
+[node name="AiPaddle" parent="." instance=ExtResource("5_iywne")]
 position = Vector2(1598, 534)
 skill = 0.0
 behaviour_style = "defensive"
