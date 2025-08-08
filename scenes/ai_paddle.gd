@@ -1,6 +1,6 @@
 # ------------------------------------------------------------
 # AiPaddle.gd — Advanced AI for Football Pong
-# Godot 4.4.1 | GDScript 2.0 | v2.6 (HIGH_SPEED_DEFEND, EDGE_GUARD)
+# Godot 4.4.1 | GDScript 2.0 | v2.6+ (HIGH_SPEED_DEFEND, EDGE_GUARD, aggression)
 # ------------------------------------------------------------
 extends CharacterBody2D
 class_name AiPaddle
@@ -9,6 +9,7 @@ class_name AiPaddle
 @export var skill: float = 0.85
 @export_enum("aggressive", "balanced", "defensive")
 var behaviour_style: String = "balanced"
+@export var aggression: float = 0.5    # 0 — очень сдержанно, 1 — очень навязчиво
 
 @export var ball_path: NodePath
 @export var player_path: NodePath
@@ -145,7 +146,9 @@ func _think() -> void:
 		else:
 			match _state:
 				State.DEFEND:
-					_state = State.INTERCEPT if b_to_me else State.BLOCK_PLAYER if b_to_player and randf() < 0.5 else State.ATTACK
+					# aggression влияет на вероятность BLOCK_PLAYER: чем выше aggression — тем меньше бот держится позади
+					var block_chance: float = lerp(0.7, 0.2, aggression)
+					_state = State.INTERCEPT if b_to_me else State.BLOCK_PLAYER if b_to_player and randf() < block_chance else State.ATTACK
 				State.INTERCEPT:
 					_state = State.FAKE if randf() < 0.25 else _state
 				State.BLOCK_PLAYER:
@@ -306,7 +309,7 @@ func _retreat_pos() -> Vector2:
 	return my_goal.lerp(start_pos, 0.2)
 
 func _add_error(style: Dictionary) -> void:
-	var r: float = ERROR_BASE_RADIUS * (1.0 - skill) * float(style.error_mult)
+	var r: float = ERROR_BASE_RADIUS * pow(1.0 - skill, 2.0) * float(style.error_mult)
 	_target_pos += Vector2(randf_range(-r, r), randf_range(-r, r))
 
 func _clamp_advancement() -> void:
@@ -323,7 +326,8 @@ func _move() -> void:
 		velocity = Vector2.ZERO
 		return
 	dir = dir.normalized()
-	var speed: float = BASE_SPEED * float(style.speed_mul) * lerp(0.6, 1.0, skill)
+	var speed_jitter: float = randf_range(1.0 - (1.0 - skill) * 0.3, 1.0 + (1.0 - skill) * 0.3)
+	var speed: float = BASE_SPEED * float(style.speed_mul) * speed_jitter * lerp(0.6, 1.0, skill)
 	match _state:
 		State.ATTACK:
 			speed *= 1.2
@@ -338,6 +342,6 @@ func _move() -> void:
 
 func _schedule_next_think() -> void:
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
-	var react: float = REACTION_BASE + (1.0 - skill) * 0.25
+	var react: float = REACTION_BASE + pow(1.0 - skill, 2.0) * 0.4
 	react *= randf_range(0.8, 1.4) * float(style.error_mult)
 	_time_to_next_think = react
