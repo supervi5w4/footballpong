@@ -97,9 +97,12 @@ func _handle_ball_collisions() -> void:
 		var col: KinematicCollision2D = get_slide_collision(i)
 		var rb := col.get_collider() as RigidBody2D
 		if rb and rb.is_in_group("ball"):
-			var info: Dictionary = Utils.reflect(rb.linear_velocity, col.get_normal(), velocity, 1.07)
+                       var normal: Vector2 = col.get_normal()
+                       var proj_speed: float = velocity.project(normal).length()
+                       var boost: float = proj_speed * 0.0001
+                       var info: Dictionary = Utils.reflect(rb.linear_velocity, normal, velocity, boost)
 
-			if _is_first_hit:
+                       if _is_first_hit:
 				var sign_dir: float = sign(rb.global_position.y - _player.global_position.y)
 				info["vel"].y += sign_dir * FIRST_HIT_DEVIATION_Y
 				_is_first_hit = false
