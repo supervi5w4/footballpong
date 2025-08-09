@@ -75,9 +75,12 @@ func _handle_ball_collisions() -> void:
 		var col: KinematicCollision2D = get_slide_collision(i)
 		var rb := col.get_collider() as RigidBody2D
 		if rb and rb.is_in_group("ball"):
-			var info: Dictionary = Utils.reflect(rb.linear_velocity, col.get_normal(), velocity, 1.07)
-			rb.linear_velocity  = info["vel"]
-			rb.angular_velocity = info["spin"]
+                       var normal: Vector2 = col.get_normal()
+                       var proj_speed: float = velocity.project(normal).length()
+                       var boost: float = proj_speed * 0.0001
+                       var info: Dictionary = Utils.reflect(rb.linear_velocity, normal, velocity, boost)
+                       rb.linear_velocity  = info["vel"]
+                       rb.angular_velocity = info["spin"]
 
 func _resolve_half_size() -> Vector2:
 	# 1) Явное значение

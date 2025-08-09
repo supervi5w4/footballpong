@@ -46,12 +46,8 @@ func _teleport_to_spawn() -> void:
 	sleeping = false
 
 func _integrate_forces(state):
-	# Boost speed slightly on every ricochet
-	if state.get_contact_count() > 0:
-		linear_velocity *= 1.05  # +5 % per bounce
-
-	var v := linear_velocity.length()
-	if v > SPEED_LIMIT:
-		linear_velocity = linear_velocity.normalized() * SPEED_LIMIT
-	elif v > 0.0 and v < MIN_SPEED:
-		linear_velocity = linear_velocity.normalized() * MIN_SPEED
+       var v := linear_velocity.length()
+       if v > SPEED_LIMIT:
+               linear_velocity = linear_velocity.normalized() * SPEED_LIMIT
+       elif v > 0.0 and v < MIN_SPEED:
+               linear_velocity = linear_velocity.normalized() * MIN_SPEED
