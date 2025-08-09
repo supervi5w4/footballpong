@@ -84,20 +84,26 @@ func _physics_process(delta: float) -> void:
 
 # ------------ Collision & First‑hit helpers ------------
 func _handle_ball_collisions() -> void:
-	for i in range(get_slide_collision_count()):
-		var col: KinematicCollision2D = get_slide_collision(i)
-		if col.get_collider() is RigidBody2D and col.get_collider().is_in_group("ball"):
-			var info: Dictionary = Utils.reflect(
-				(col.get_collider() as RigidBody2D).linear_velocity,
-				col.get_normal(),
-				velocity, 1.07)
-			var ball: RigidBody2D = col.get_collider() as RigidBody2D
-			if _is_first_hit:
-				var sign_dir: float = sign(ball.global_position.y - _player.global_position.y)
-				info["vel"].y += sign_dir * FIRST_HIT_DEVIATION_Y
-				_is_first_hit = false
-			ball.linear_velocity  = info["vel"]
-			ball.angular_velocity = info["spin"]
+        for i in range(get_slide_collision_count()):
+                var col: KinematicCollision2D = get_slide_collision(i)
+                if col.get_collider() is RigidBody2D and col.get_collider().is_in_group("ball"):
+                        var info: Dictionary = Utils.reflect(
+                                (col.get_collider() as RigidBody2D).linear_velocity,
+                                col.get_normal(),
+                                velocity, 1.07)
+                        var ball: RigidBody2D = col.get_collider() as RigidBody2D
+                        if _is_first_hit:
+                                var sign_dir: float = sign(ball.global_position.y - _player.global_position.y)
+                                info["vel"].y += sign_dir * FIRST_HIT_DEVIATION_Y
+                                _is_first_hit = false
+                        var miss: float = pow(1.0 - skill, 2.0)
+                        if randf() < miss:
+                                var angle_err: float = randf_range(-0.35, 0.35)
+                                info["vel"] = info["vel"].rotated(angle_err)
+                                info["vel"] *= lerp(0.5, 1.0, skill)
+                                info["spin"] *= lerp(0.5, 1.0, skill)
+                        ball.linear_velocity  = info["vel"]
+                        ball.angular_velocity = info["spin"]
 
 func _check_first_hit_reset() -> void:
 	if not _is_first_hit:
@@ -309,8 +315,9 @@ func _retreat_pos() -> Vector2:
 	return my_goal.lerp(start_pos, 0.2)
 
 func _add_error(style: Dictionary) -> void:
-	var r: float = ERROR_BASE_RADIUS * pow(1.0 - skill, 2.0) * float(style.error_mult)
-	_target_pos += Vector2(randf_range(-r, r), randf_range(-r, r))
+        var weak: float = 1.0 - skill
+        var r: float = ERROR_BASE_RADIUS * weak * weak * (1.0 + weak) * float(style.error_mult)
+        _target_pos += Vector2(randf_range(-r, r), randf_range(-r, r))
 
 func _clamp_advancement() -> void:
 	var limit_x: float = FIELD_SIZE.x * ADVANCE_LIMIT_PROPORTION
@@ -320,19 +327,20 @@ func _clamp_advancement() -> void:
 		_target_pos.x = min(_target_pos.x, FIELD_SIZE.x - limit_x)
 
 func _move() -> void:
-	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
-	var dir: Vector2 = _target_pos - global_position
-	if dir.length() < 2.0:
-		velocity = Vector2.ZERO
-		return
-	dir = dir.normalized()
-	var speed_jitter: float = randf_range(1.0 - (1.0 - skill) * 0.3, 1.0 + (1.0 - skill) * 0.3)
-	var speed: float = BASE_SPEED * float(style.speed_mul) * speed_jitter * lerp(0.6, 1.0, skill)
-	match _state:
-		State.ATTACK:
-			speed *= 1.2
-		State.RETREAT:
-			speed *= 0.8
+        var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
+        var dir: Vector2 = _target_pos - global_position
+        if dir.length() < 2.0:
+                velocity = Vector2.ZERO
+                return
+        dir = dir.normalized()
+        var jitter_mag: float = (1.0 - skill) * 0.5
+        var speed_jitter: float = randf_range(1.0 - jitter_mag, 1.0 + jitter_mag)
+        var speed: float = BASE_SPEED * float(style.speed_mul) * speed_jitter * lerp(0.4, 1.0, skill)
+        match _state:
+                State.ATTACK:
+                        speed *= 1.2
+                State.RETREAT:
+                        speed *= 0.8
 		State.HIGH_SPEED_DEFEND:
 			speed *= 1.1
 		State.EDGE_GUARD:
@@ -341,7 +349,8 @@ func _move() -> void:
 	move_and_slide()
 
 func _schedule_next_think() -> void:
-	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
-	var react: float = REACTION_BASE + pow(1.0 - skill, 2.0) * 0.4
-	react *= randf_range(0.8, 1.4) * float(style.error_mult)
-	_time_to_next_think = react
+        var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
+        var weak: float = 1.0 - skill
+        var react: float = REACTION_BASE + weak * weak * 0.4
+        react *= randf_range(0.8, 1.4) * float(style.error_mult) * (1.0 + weak)
+        _time_to_next_think = react
