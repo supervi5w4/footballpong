@@ -1,15 +1,15 @@
 # ------------------------------------------------------------
 # AiPaddle.gd — Advanced AI for Football Pong
-# Godot 4.4.1 | GDScript 2.0 | v2.6+ (HIGH_SPEED_DEFEND, EDGE_GUARD, aggression)
+# Godot 4.4.1 | GDScript 2.0
+# v2.6+ (HIGH_SPEED_DEFEND, EDGE_GUARD, aggression, safety fixes)
 # ------------------------------------------------------------
 extends CharacterBody2D
 class_name AiPaddle
 
 # ---------------- Tunables & Constants ----------------
-@export var skill: float = 0.85
-@export_enum("aggressive", "balanced", "defensive")
-var behaviour_style: String = "balanced"
-@export var aggression: float = 0.5    # 0 — очень сдержанно, 1 — очень навязчиво
+@export_range(0.0, 1.0, 0.01) var skill: float = 0.85
+@export_enum("aggressive", "balanced", "defensive") var behaviour_style: String = "balanced"
+@export_range(0.0, 1.0, 0.01) var aggression: float = 0.5  # 0 — сдержанно, 1 — навязчиво
 
 @export var ball_path: NodePath
 @export var player_path: NodePath
@@ -57,8 +57,12 @@ var _is_first_hit: bool = true
 
 # ---------------- READY ----------------
 func _ready() -> void:
-	_ball   = get_node(ball_path)   as RigidBody2D
-	_player = get_node(player_path) as CharacterBody2D
+	_ball   = get_node_or_null(ball_path)   as RigidBody2D
+	_player = get_node_or_null(player_path) as CharacterBody2D
+	if _ball == null or _player == null:
+		push_error("AiPaddle: ball_path/player_path не назначены.")
+		set_physics_process(false)
+		return
 	start_pos = global_position
 	_think()
 	_schedule_next_think()
@@ -82,22 +86,28 @@ func _physics_process(delta: float) -> void:
 	_handle_ball_collisions()
 	_check_first_hit_reset()
 
-# ------------ Collision & First‑hit helpers ------------
+# ------------ Collision & First-hit helpers ------------
 func _handle_ball_collisions() -> void:
 	for i in range(get_slide_collision_count()):
 		var col: KinematicCollision2D = get_slide_collision(i)
-		if col.get_collider() is RigidBody2D and col.get_collider().is_in_group("ball"):
-			var info: Dictionary = Utils.reflect(
-				(col.get_collider() as RigidBody2D).linear_velocity,
-				col.get_normal(),
-				velocity, 1.07)
-			var ball: RigidBody2D = col.get_collider() as RigidBody2D
+		var rb := col.get_collider() as RigidBody2D
+		if rb and rb.is_in_group("ball"):
+			var info: Dictionary = Utils.reflect(rb.linear_velocity, col.get_normal(), velocity, 1.07)
+
 			if _is_first_hit:
-				var sign_dir: float = sign(ball.global_position.y - _player.global_position.y)
+				var sign_dir: float = sign(rb.global_position.y - _player.global_position.y)
 				info["vel"].y += sign_dir * FIRST_HIT_DEVIATION_Y
 				_is_first_hit = false
-			ball.linear_velocity  = info["vel"]
-			ball.angular_velocity = info["spin"]
+
+			# Модель "промаха" для слабого бота
+			var miss := pow(1.0 - skill, 2.0)
+			if randf() < miss:
+				var angle_err := randf_range(-0.35, 0.35) * (1.0 + (1.0 - skill))
+				info["vel"]  = info["vel"].rotated(angle_err) * lerp(0.5, 1.0, skill)
+				info["spin"] = info["spin"] * lerp(0.5, 1.0, skill)
+
+			rb.linear_velocity  = info["vel"]
+			rb.angular_velocity = info["spin"]
 
 func _check_first_hit_reset() -> void:
 	if not _is_first_hit:
@@ -108,11 +118,17 @@ func _check_first_hit_reset() -> void:
 # ---------------- THINK ----------------
 func _think() -> void:
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
+	aggression = clamp(aggression, 0.0, 1.0)
+
 	var ball_pos: Vector2 = _ball.global_position
 	var player_pos: Vector2 = _player.global_position
-	var ball_dir: Vector2 = _ball.linear_velocity.normalized()
+
+	var lv: Vector2 = _ball.linear_velocity
+	var spd: float = lv.length()
+	var ball_dir: Vector2 = (lv / max(spd, 0.0001))  # безопасная "нормализация"
+
 	var ball_behind: bool = _is_ball_behind()
-	var heading_to_goal: bool = (defends_right_side and _ball.linear_velocity.x > 0.0) or (not defends_right_side and _ball.linear_velocity.x < 0.0)
+	var heading_to_goal: bool = (defends_right_side and lv.x > 0.0) or (not defends_right_side and lv.x < 0.0)
 
 	if ball_behind:
 		_state = State.DODGE if heading_to_goal else State.RETREAT
@@ -126,10 +142,9 @@ func _think() -> void:
 		var toward_me: Vector2 = (global_position - ball_pos).normalized()
 		var b_to_player: bool = ball_dir.dot(toward_player) > 0.7
 		var b_to_me: bool = ball_dir.dot(toward_me) > 0.7
-		var ball_speed: float = _ball.linear_velocity.length()
-		var fast_ball: bool = ball_speed > FAST_BALL_SPEED
+		var fast_ball: bool = spd > FAST_BALL_SPEED
 		var edge_near: bool = ball_pos.y < EDGE_MARGIN or ball_pos.y > float(FIELD_SIZE.y) - EDGE_MARGIN
-		var strong_hit: bool = b_to_me and (ball_speed > STRONG_HIT_SPEED or abs(ball_dir.y) > STRONG_HIT_ANGLE)
+		var strong_hit: bool = b_to_me and (spd > STRONG_HIT_SPEED or abs(ball_dir.y) > STRONG_HIT_ANGLE)
 
 		if strong_hit and randf() < 0.5:
 			_state = State.DODGE
@@ -142,11 +157,11 @@ func _think() -> void:
 			_target_pos = _edge_guard_pos(ball_pos)
 		elif not _is_on_my_side(ball_pos) or not b_to_me:
 			_state = State.INTERCEPT
-			_target_pos = _predict_multi_bounce(ball_pos, _ball.linear_velocity, max_bounces)
+			_target_pos = _predict_multi_bounce(ball_pos, lv, max_bounces)
 		else:
 			match _state:
 				State.DEFEND:
-					# aggression влияет на вероятность BLOCK_PLAYER: чем выше aggression — тем меньше бот держится позади
+					# Чем выше aggression — тем меньше бот склонен блокировать игрока из обороны
 					var block_chance: float = lerp(0.7, 0.2, aggression)
 					_state = State.INTERCEPT if b_to_me else State.BLOCK_PLAYER if b_to_player and randf() < block_chance else State.ATTACK
 				State.INTERCEPT:
@@ -182,7 +197,7 @@ func _think() -> void:
 				State.BLOCK_PLAYER:
 					_target_pos = _block_pos(player_pos)
 				State.FAKE:
-					_target_pos = ball_pos + Vector2(randf_range(-150.0,150.0), randf_range(-100.0,100.0))
+					_target_pos = ball_pos + Vector2(randf_range(-150.0, 150.0), randf_range(-100.0, 100.0))
 					_fake_timer = 0.25
 				State.ATTACK:
 					_target_pos = _attack_pos(ball_pos)
@@ -240,7 +255,7 @@ func _predict_multi_bounce(ball_pos: Vector2, velocity: Vector2, max_bounces: in
 	while b < max_bounces:
 		var toward_me: bool = (defends_right_side and vel.x > 0.0) or (not defends_right_side and vel.x < 0.0)
 		if toward_me:
-			var t_to_me: float = (target_x - pos.x) / vel.x
+			var t_to_me: float = (target_x - pos.x) / max(vel.x, 0.0001)
 			if t_to_me >= 0.0:
 				pos += vel * t_to_me
 				return Vector2(target_x, clamp(pos.y, 80.0, bottom - 80.0))
@@ -254,7 +269,7 @@ func _predict_multi_bounce(ball_pos: Vector2, velocity: Vector2, max_bounces: in
 		var toward_player: bool = (defends_right_side and vel.x < 0.0) or (not defends_right_side and vel.x > 0.0)
 		var t_player: float = INF
 		if toward_player:
-			t_player = (player_x - pos.x) / vel.x
+			t_player = (player_x - pos.x) / max(vel.x, 0.0001)
 			if t_player < 0.0:
 				t_player = INF
 		var t_next: float = min(t_wall, t_player)
@@ -268,7 +283,7 @@ func _predict_multi_bounce(ball_pos: Vector2, velocity: Vector2, max_bounces: in
 		b += 1
 	if is_zero_approx(vel.x):
 		return Vector2(target_x, clamp(pos.y, 80.0, bottom - 80.0))
-	var t_final: float = (target_x - pos.x) / vel.x
+	var t_final: float = (target_x - pos.x) / max(vel.x, 0.0001)
 	pos += vel * t_final
 	return Vector2(target_x, clamp(pos.y, 80.0, bottom - 80.0))
 
@@ -309,7 +324,8 @@ func _retreat_pos() -> Vector2:
 	return my_goal.lerp(start_pos, 0.2)
 
 func _add_error(style: Dictionary) -> void:
-	var r: float = ERROR_BASE_RADIUS * pow(1.0 - skill, 2.0) * float(style.error_mult)
+	var weak: float = 1.0 - skill
+	var r: float = ERROR_BASE_RADIUS * weak * weak * (1.0 + weak) * float(style.error_mult)
 	_target_pos += Vector2(randf_range(-r, r), randf_range(-r, r))
 
 func _clamp_advancement() -> void:
@@ -326,8 +342,9 @@ func _move() -> void:
 		velocity = Vector2.ZERO
 		return
 	dir = dir.normalized()
-	var speed_jitter: float = randf_range(1.0 - (1.0 - skill) * 0.3, 1.0 + (1.0 - skill) * 0.3)
-	var speed: float = BASE_SPEED * float(style.speed_mul) * speed_jitter * lerp(0.6, 1.0, skill)
+	var jitter_mag: float = (1.0 - skill) * 0.5
+	var speed_jitter: float = randf_range(1.0 - jitter_mag, 1.0 + jitter_mag)
+	var speed: float = BASE_SPEED * float(style.speed_mul) * speed_jitter * lerp(0.4, 1.0, skill)
 	match _state:
 		State.ATTACK:
 			speed *= 1.2
@@ -342,6 +359,7 @@ func _move() -> void:
 
 func _schedule_next_think() -> void:
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
-	var react: float = REACTION_BASE + pow(1.0 - skill, 2.0) * 0.4
-	react *= randf_range(0.8, 1.4) * float(style.error_mult)
+	var weak: float = 1.0 - skill
+	var react: float = REACTION_BASE + weak * weak * 0.4
+	react *= randf_range(0.8, 1.4) * float(style.error_mult) * (1.0 + weak)
 	_time_to_next_think = react
