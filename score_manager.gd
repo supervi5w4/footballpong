@@ -137,20 +137,28 @@ func _simulate_single_match(index: int) -> void:
 	var ga: int = _random_goals(rng)
 
 	# корректировка по силе
-	var sh: float = float(get_team_dict(home).get("strength", 1.0))
-	var sa: float = float(get_team_dict(away).get("strength", 1.0))
-	if abs(sh - sa) >= 0.05 and rng.randf() < 0.5:
-		if sh > sa:
-			gh += 1
-		else:
-			ga += 1
+        var sh: float = float(get_team_dict(home).get("strength", 1.0))
+        var sa: float = float(get_team_dict(away).get("strength", 1.0))
 
-	# 25 % — ничья
-	if rng.randf() < 0.25:
-		ga = gh
-	# 10 % — бонус хозяевам
-	elif rng.randf() < 0.10:
-		gh += 1
+        # корректировка по относительной силе (можно добавить несколько голов)
+        var diff := sh - sa
+        var abs_diff := abs(diff)
+        if abs_diff > 0.0 and rng.randf() < abs_diff:
+                var extra := rng.randi_range(1, int(abs_diff * 3.0) + 1)
+                if diff > 0:
+                        gh += extra
+                else:
+                        ga += extra
+
+        # шанс ничьей уменьшается при большей разнице силы
+        var draw_chance := clamp(0.25 - abs_diff * 0.15, 0.05, 0.25)
+        if rng.randf() < draw_chance:
+                ga = gh
+        else:
+                # бонус хозяев зависит от относительной силы
+                var home_bonus_chance := clamp(0.10 + diff * 0.1, 0.0, 0.5)
+                if rng.randf() < home_bonus_chance:
+                        gh += 1
 
 	m["score"] = "%d:%d" % [gh, ga]
 	m["played"] = true
