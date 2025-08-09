@@ -112,10 +112,10 @@ position = Vector2(86, 699)
 shape = SubResource("RectangleShape2D_0tnpc")
 
 [node name="PlayerPaddle" parent="." instance=ExtResource("4_lbhrr")]
-position = Vector2(173, 529)
+position = Vector2(276, 531)
 
 [node name="AiPaddle" parent="." instance=ExtResource("5_iywne")]
-position = Vector2(1598, 534)
+position = Vector2(1486, 529)
 skill = 0.0
 behaviour_style = "defensive"
 ball_path = NodePath("../Ball")

@@ -6,6 +6,11 @@
 extends CharacterBody2D
 class_name AiPaddle
 
+# --- Горизонтальные ограничения (аналогично Player) ---
+@export var LEFT_MARGIN_PX: int = 200
+@export var use_center_as_right_limit: bool = true
+@export var center_bias_px: int = 50   # на сколько пикселей НЕ доходить до центра
+
 # ---------------- Tunables & Constants ----------------
 @export_range(0.0, 1.0, 0.01) var skill: float = 0.85
 @export_enum("aggressive", "balanced", "defensive") var behaviour_style: String = "balanced"
@@ -99,7 +104,6 @@ func _handle_ball_collisions() -> void:
 				info["vel"].y += sign_dir * FIRST_HIT_DEVIATION_Y
 				_is_first_hit = false
 
-			# Модель "промаха" для слабого бота
 			var miss := pow(1.0 - skill, 2.0)
 			if randf() < miss:
 				var angle_err := randf_range(-0.35, 0.35) * (1.0 + (1.0 - skill))
@@ -114,6 +118,13 @@ func _check_first_hit_reset() -> void:
 		var left_side: bool = _ball.global_position.x < HALF_FIELD_X
 		if (defends_right_side and left_side) or (not defends_right_side and not left_side):
 			_is_first_hit = true
+func _schedule_next_think() -> void:
+	# Период «переосмыслить план» зависит от скилла и стиля
+	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
+	var weak := 1.0 - skill
+	var react := REACTION_BASE + weak * weak * 0.4
+	react *= randf_range(0.8, 1.4) * float(style.error_mult) * (1.0 + weak)
+	_time_to_next_think = react
 
 # ---------------- THINK ----------------
 func _think() -> void:
@@ -125,7 +136,7 @@ func _think() -> void:
 
 	var lv: Vector2 = _ball.linear_velocity
 	var spd: float = lv.length()
-	var ball_dir: Vector2 = (lv / max(spd, 0.0001))  # безопасная "нормализация"
+	var ball_dir: Vector2 = (lv / max(spd, 0.0001))
 
 	var ball_behind: bool = _is_ball_behind()
 	var heading_to_goal: bool = (defends_right_side and lv.x > 0.0) or (not defends_right_side and lv.x < 0.0)
@@ -161,7 +172,6 @@ func _think() -> void:
 		else:
 			match _state:
 				State.DEFEND:
-					# Чем выше aggression — тем меньше бот склонен блокировать игрока из обороны
 					var block_chance: float = lerp(0.7, 0.2, aggression)
 					_state = State.INTERCEPT if b_to_me else State.BLOCK_PLAYER if b_to_player and randf() < block_chance else State.ATTACK
 				State.INTERCEPT:
@@ -355,11 +365,47 @@ func _move() -> void:
 		State.EDGE_GUARD:
 			speed *= 0.9
 	velocity = dir * speed
-	move_and_slide()
+	move_and_slide()      # двигаем тело (реком. паттерн для CharacterBody2D)
+	_clamp_x()            # затем жёстко клампим X по вьюпорту
 
-func _schedule_next_think() -> void:
-	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
-	var weak: float = 1.0 - skill
-	var react: float = REACTION_BASE + weak * weak * 0.4
-	react *= randf_range(0.8, 1.4) * float(style.error_mult) * (1.0 + weak)
-	_time_to_next_think = react
+# ==========================================================
+#                    HORIZONTAL CLAMP HELPERS
+# ==========================================================
+
+func _clamp_x() -> void:
+	var vp: Rect2 = get_viewport_rect()  # CanvasItem → прямоугольник вьюпорта
+	var half := _resolve_half_size()
+
+	var center_x := vp.position.x + vp.size.x * 0.5
+
+	var min_x: float
+	var max_x: float
+
+	if defends_right_side:
+		# Правая половина: от центра (сдвинуто в ПРАВО) до правого края с отступом
+		min_x = center_x + float(center_bias_px) + half.x if use_center_as_right_limit \
+			else vp.position.x + half.x
+		max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
+	else:
+		# Левая половина: от левого края с отступом до центра (сдвинуто в ЛЕВО)
+		min_x = vp.position.x + float(LEFT_MARGIN_PX) + half.x
+		max_x = center_x - float(center_bias_px) - half.x if use_center_as_right_limit \
+			else vp.position.x + vp.size.x - half.x
+
+	if min_x > max_x:
+		max_x = min_x
+
+	global_position.x = clamp(global_position.x, min_x, max_x)
+
+func _resolve_half_size() -> Vector2:
+	var cs := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if cs and cs.shape:
+		if cs.shape is RectangleShape2D:
+			return (cs.shape as RectangleShape2D).extents
+		if cs.shape is CapsuleShape2D:
+			var s := cs.shape as CapsuleShape2D
+			return Vector2(s.radius, s.height * 0.5)
+		if cs.shape is CircleShape2D:
+			var c := cs.shape as CircleShape2D
+			return Vector2(c.radius, c.radius)
+	return Vector2(16, 16)
