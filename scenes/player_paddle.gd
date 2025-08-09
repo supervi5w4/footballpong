@@ -8,6 +8,7 @@ extends CharacterBody2D
 class_name PlayerPaddle
 
 const MOVE_SPEED: float = 850.0
+const Utils: Script = preload("res://scripts/utils.gd")
 
 # --- Горизонтальные ограничения ---
 @export var LEFT_MARGIN_PX: int = 200
@@ -35,10 +36,11 @@ func _physics_process(_delta: float) -> void:
 	if dir.length() > 1.0:
 		dir = dir.normalized()
 
-	velocity = dir * MOVE_SPEED
-	move_and_slide()  # потом зажимаем X в допустимый диапазон
+        velocity = dir * MOVE_SPEED
+        move_and_slide()  # потом зажимаем X в допустимый диапазон
 
-	_clamp_x()
+        _handle_ball_collisions()
+        _clamp_x()
 
 # ----------------- ВСПОМОГАТЕЛЬНОЕ -----------------
 
@@ -58,7 +60,16 @@ func _clamp_x() -> void:
 	if min_x > max_x:
 		max_x = min_x
 
-	global_position.x = clamp(global_position.x, min_x, max_x)
+        global_position.x = clamp(global_position.x, min_x, max_x)
+
+func _handle_ball_collisions() -> void:
+        for i in range(get_slide_collision_count()):
+                var col: KinematicCollision2D = get_slide_collision(i)
+                var rb := col.get_collider() as RigidBody2D
+                if rb and rb.is_in_group("ball"):
+                        var info: Dictionary = Utils.reflect(rb.linear_velocity, col.get_normal(), velocity, 1.07)
+                        rb.linear_velocity = info["vel"]
+                        rb.angular_velocity = info["spin"]
 
 func _resolve_half_size() -> Vector2:
 	# 1) Явное значение
