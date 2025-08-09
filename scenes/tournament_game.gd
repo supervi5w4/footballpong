@@ -16,6 +16,9 @@ var current_half: int = 0
 var ai: AiPaddle
 var base_skill: float = 0.8
 
+const SKILL_MIN := 0.10
+const SKILL_MAX := 0.99
+
 func _ready() -> void:
 	# --- Сброс счёта ---
 	Score.left = 0
@@ -34,22 +37,35 @@ func _ready() -> void:
 		var opponent: Dictionary = Score.get_team_dict(opponent_name)
 
 		s = float(opponent.get("strength", 0.8))
-		s = clamp(s, 0.6, 0.99)
+		s = clamp(s, SKILL_MIN, SKILL_MAX)
 	else:
 		Score.player_is_home = true
-		s = clamp(s, 0.6, 0.99)
+		s = clamp(s, SKILL_MIN, SKILL_MAX)
 
 	# --- Настройка ИИ ---
-	ai = game_node.get_node("AiPaddle") as AiPaddle
-	base_skill = s
-	ai.skill = s
-	_apply_ai_tuning()
-	Score.score_changed.connect(_on_score_changed)
+	ai = game_node.get_node_or_null("AiPaddle") as AiPaddle
+	if ai == null:
+		push_error("AiPaddle не найден в дочерних узлах Game. Проверь путь 'AiPaddle'.")
+	else:
+		base_skill = s
+		ai.skill = s
+		_apply_ai_tuning()
+
+	# подключаем сигнал изменения счёта (защита от двойного подключения)
+	if not Score.score_changed.is_connected(_on_score_changed):
+		Score.score_changed.connect(_on_score_changed)
 
 	current_half = 0
 	_start_next_half()
 
+func _exit_tree() -> void:
+	# чисто отключимся от сигнала
+	if Score.score_changed.is_connected(_on_score_changed):
+		Score.score_changed.disconnect(_on_score_changed)
+
 func _apply_ai_tuning() -> void:
+	if ai == null:
+		return
 	if ai.skill > 0.9:
 		ai.behaviour_style = "aggressive"
 		ai.max_bounces = 5
@@ -64,10 +80,12 @@ func _apply_ai_tuning() -> void:
 		ai.aggression = 0.3
 
 func _on_score_changed(left: int, right: int) -> void:
+	if ai == null:
+		return
 	var player_goals: int = left if Score.player_is_home else right
 	var ai_goals: int = right if Score.player_is_home else left
 	var diff: int = player_goals - ai_goals
-	ai.skill = clamp(base_skill + diff * 0.1, 0.4, 0.99)
+	ai.skill = clamp(base_skill + diff * 0.1, SKILL_MIN, SKILL_MAX)
 	_apply_ai_tuning()
 
 func _start_next_half() -> void:
