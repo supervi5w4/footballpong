@@ -6,29 +6,31 @@ extends Node
 class_name Utils
 
 # Отражение мяча от ракетки с учётом спина (вращения)
-# speed_boost — добавочный множитель скорости от движения ракетки
+# Скорость ракетки раскладывается на нормальную и тангенциальную составляющие:
+#   • нормальная — влияет на ускорение мяча;
+#   • тангенциальная — на величину добавленного спина.
 # Возвращает Dictionary:
 #   vel  – новый вектор скорости мяча после столкновения
 #   spin – добавленное вращение (для эффекта Магнуса)
 static func reflect(
 	old_vel: Vector2,
 	normal: Vector2,
-	paddle_vel: Vector2,
-	speed_boost: float = 0.0
+	paddle_vel: Vector2
 ) -> Dictionary:
-	# 1. Отражаем скорость от нормали и добавляем прирост от движения ракетки
-	var v_new: Vector2 = old_vel.bounce(normal) * (1.0 + speed_boost)
+	# 1. Разложение скорости ракетки
+	var paddle_normal_speed: float = paddle_vel.dot(normal)
+	var tangent: Vector2 = normal.orthogonal()
+	var paddle_tangent_speed: float = paddle_vel.dot(tangent)
 
-	# 2. Вычисляем спин (по вертикальной составляющей скорости ракетки)
-	#    — вниз = backspin, вверх = topspin
-	var spin: float = clamp(paddle_vel.y * 0.01, -200.0, 200.0)
+	# 2. Отражаем скорость от нормали и добавляем ускорение от движения ракетки
+	var accel_factor: float = 1.0 + paddle_normal_speed * 0.0001
+	var v_new: Vector2 = old_vel.bounce(normal) * accel_factor
+
+	# 3. Вычисляем спин (по тангенциальной составляющей скорости ракетки)
+	#    — положительное значение = topspin, отрицательное = backspin
+	var spin: float = clamp(paddle_tangent_speed * 0.01, -200.0, 200.0)
 
 	return {
 		"vel": v_new,
 		"spin": spin
 	}
-
-# В будущем можно добавить:
-# - утилиту для ограничения позиции в пределах поля
-# - генератор случайного направления подачи
-# - функцию нормализации скорости до заданного диапазона
