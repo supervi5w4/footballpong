@@ -12,12 +12,12 @@ const Utils: Script = preload("res://scripts/utils.gd")
 
 # --- Параметры движения ---
 @export_range(100.0, 3000.0, 10.0) var MOVE_SPEED: float = 850.0
-@export_range(0.0, 1.0, 0.01) var accel: float = 0.22        # 0 — мгновенно, 1 — очень плавно
+@export_range(0.0, 1.0, 0.01) var accel: float = 0.22  # 0 — мгновенно, 1 — очень плавно
 
 # --- Горизонтальные ограничения ---
 @export_range(0, 1000, 1) var LEFT_MARGIN_PX: int = 200
 @export var use_center_as_right_limit: bool = true
-@export_range(0, 600, 1) var center_bias_px: int = 50         # на сколько пикселей левее центра ограничивать
+@export_range(0, 600, 1) var center_bias_px: int = 50  # на сколько пикселей левее центра ограничивать
 
 # Если знаешь точный полуразмер спрайта/коллайдера — задай здесь
 @export var half_size_override: Vector2 = Vector2.ZERO
@@ -25,6 +25,8 @@ const Utils: Script = preload("res://scripts/utils.gd")
 var start_pos: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
+	# подстраховка на случай кривых значений в инспекторе
+	accel = clamp(accel, 0.0, 1.0)
 	start_pos = global_position
 
 func reset_position() -> void:
@@ -37,7 +39,7 @@ func _physics_process(_delta: float) -> void:
 		Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left"),
 		Input.get_action_strength("ui_down")  - Input.get_action_strength("ui_up")
 	)
-	if dir.length() > 1.0:
+	if dir.length_squared() > 1.0:
 		dir = dir.normalized()
 
 	# --- Плавное изменение скорости (немного "живее") ---
@@ -75,7 +77,10 @@ func _handle_ball_collisions() -> void:
 		var col: KinematicCollision2D = get_slide_collision(i)
 		var rb := col.get_collider() as RigidBody2D
 		if rb and rb.is_in_group("ball"):
-			var info: Dictionary = Utils.reflect(rb.linear_velocity, col.get_normal(), velocity, 1.07)
+			var normal: Vector2 = col.get_normal()
+			var proj_speed: float = velocity.project(normal).length()
+			var boost: float = proj_speed * 0.0001
+			var info: Dictionary = Utils.reflect(rb.linear_velocity, normal, velocity, boost)
 			rb.linear_velocity  = info["vel"]
 			rb.angular_velocity = info["spin"]
 

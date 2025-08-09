@@ -9,7 +9,8 @@ class_name AiPaddle
 # --- Горизонтальные ограничения (аналогично Player) ---
 @export var LEFT_MARGIN_PX: int = 200
 @export var use_center_as_right_limit: bool = true
-@export var center_bias_px: int = 50   # на сколько пикселей НЕ доходить до центра
+@export var center_bias_px: int = 50     # на сколько пикселей НЕ доходить до центра
+@export var half_size_override: Vector2 = Vector2.ZERO
 
 # ---------------- Tunables & Constants ----------------
 @export_range(0.0, 1.0, 0.01) var skill: float = 0.85
@@ -62,7 +63,7 @@ var _is_first_hit: bool = true
 
 # ---------------- READY ----------------
 func _ready() -> void:
-	_ball   = get_node_or_null(ball_path)   as RigidBody2D
+	_ball = get_node_or_null(ball_path) as RigidBody2D
 	_player = get_node_or_null(player_path) as CharacterBody2D
 	if _ball == null or _player == null:
 		push_error("AiPaddle: ball_path/player_path не назначены.")
@@ -97,7 +98,10 @@ func _handle_ball_collisions() -> void:
 		var col: KinematicCollision2D = get_slide_collision(i)
 		var rb := col.get_collider() as RigidBody2D
 		if rb and rb.is_in_group("ball"):
-			var info: Dictionary = Utils.reflect(rb.linear_velocity, col.get_normal(), velocity, 1.07)
+			var normal: Vector2 = col.get_normal()
+			var proj_speed: float = velocity.project(normal).length()
+			var boost: float = proj_speed * 0.0001
+			var info: Dictionary = Utils.reflect(rb.linear_velocity, normal, velocity, boost)
 
 			if _is_first_hit:
 				var sign_dir: float = sign(rb.global_position.y - _player.global_position.y)
@@ -118,8 +122,8 @@ func _check_first_hit_reset() -> void:
 		var left_side: bool = _ball.global_position.x < HALF_FIELD_X
 		if (defends_right_side and left_side) or (not defends_right_side and not left_side):
 			_is_first_hit = true
+
 func _schedule_next_think() -> void:
-	# Период «переосмыслить план» зависит от скилла и стиля
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
 	var weak := 1.0 - skill
 	var react := REACTION_BASE + weak * weak * 0.4
@@ -136,7 +140,7 @@ func _think() -> void:
 
 	var lv: Vector2 = _ball.linear_velocity
 	var spd: float = lv.length()
-	var ball_dir: Vector2 = (lv / max(spd, 0.0001))
+	var ball_dir: Vector2 = (lv / max(spd, 0.0001))  # безопасная "нормализация"
 
 	var ball_behind: bool = _is_ball_behind()
 	var heading_to_goal: bool = (defends_right_side and lv.x > 0.0) or (not defends_right_side and lv.x < 0.0)
@@ -345,6 +349,7 @@ func _clamp_advancement() -> void:
 	else:
 		_target_pos.x = min(_target_pos.x, FIELD_SIZE.x - limit_x)
 
+# ---------------- Movement & Clamp X ----------------
 func _move() -> void:
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
 	var dir: Vector2 = _target_pos - global_position
@@ -365,32 +370,36 @@ func _move() -> void:
 		State.EDGE_GUARD:
 			speed *= 0.9
 	velocity = dir * speed
-	move_and_slide()      # двигаем тело (реком. паттерн для CharacterBody2D)
-	_clamp_x()            # затем жёстко клампим X по вьюпорту
+	move_and_slide()
+	_clamp_x()
 
 # ==========================================================
 #                    HORIZONTAL CLAMP HELPERS
 # ==========================================================
-
 func _clamp_x() -> void:
-	var vp: Rect2 = get_viewport_rect()  # CanvasItem → прямоугольник вьюпорта
+	var vp: Rect2 = get_viewport_rect()
 	var half := _resolve_half_size()
-
 	var center_x := vp.position.x + vp.size.x * 0.5
 
 	var min_x: float
 	var max_x: float
 
 	if defends_right_side:
-		# Правая половина: от центра (сдвинуто в ПРАВО) до правого края с отступом
-		min_x = center_x + float(center_bias_px) + half.x if use_center_as_right_limit \
-			else vp.position.x + half.x
-		max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
+		# правая половина
+		if use_center_as_right_limit:
+			min_x = center_x + float(center_bias_px) + half.x
+			max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
+		else:
+			min_x = vp.position.x + float(LEFT_MARGIN_PX) + half.x
+			max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
 	else:
-		# Левая половина: от левого края с отступом до центра (сдвинуто в ЛЕВО)
-		min_x = vp.position.x + float(LEFT_MARGIN_PX) + half.x
-		max_x = center_x - float(center_bias_px) - half.x if use_center_as_right_limit \
-			else vp.position.x + vp.size.x - half.x
+		# левая половина
+		if use_center_as_right_limit:
+			min_x = vp.position.x + float(LEFT_MARGIN_PX) + half.x
+			max_x = center_x - float(center_bias_px) - half.x
+		else:
+			min_x = vp.position.x + float(LEFT_MARGIN_PX) + half.x
+			max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
 
 	if min_x > max_x:
 		max_x = min_x
@@ -398,6 +407,10 @@ func _clamp_x() -> void:
 	global_position.x = clamp(global_position.x, min_x, max_x)
 
 func _resolve_half_size() -> Vector2:
+	# 1) Явное значение
+	if half_size_override != Vector2.ZERO:
+		return half_size_override
+	# 2) Из коллайдера
 	var cs := get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if cs and cs.shape:
 		if cs.shape is RectangleShape2D:
@@ -408,4 +421,5 @@ func _resolve_half_size() -> Vector2:
 		if cs.shape is CircleShape2D:
 			var c := cs.shape as CircleShape2D
 			return Vector2(c.radius, c.radius)
+	# 3) Дефолт
 	return Vector2(16, 16)
