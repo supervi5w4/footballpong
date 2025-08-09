@@ -103,9 +103,7 @@ func _handle_ball_collisions() -> void:
 				continue
 
 			var normal: Vector2 = col.get_normal()
-			var proj_speed: float = velocity.project(normal).length()
-			var boost: float = proj_speed * 0.0001
-			var info: Dictionary = Utils.reflect(rb.linear_velocity, normal, velocity, boost)
+			var info: Dictionary = Utils.reflect(rb.linear_velocity, normal, velocity)
 
 			if _is_first_hit:
 				var sign_dir: float = sign(rb.global_position.y - _player.global_position.y)

@@ -78,9 +78,7 @@ func _handle_ball_collisions() -> void:
 		var rb := col.get_collider() as RigidBody2D
 		if rb and rb.is_in_group("ball"):
 			var normal: Vector2 = col.get_normal()
-			var proj_speed: float = velocity.project(normal).length()
-			var boost: float = proj_speed * 0.0001
-			var info: Dictionary = Utils.reflect(rb.linear_velocity, normal, velocity, boost)
+			var info: Dictionary = Utils.reflect(rb.linear_velocity, normal, velocity)
 			rb.linear_velocity  = info["vel"]
 			rb.angular_velocity = info["spin"]
 
