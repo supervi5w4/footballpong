@@ -33,11 +33,11 @@ func _ready() -> void:
 		var opponent_name: String = String(m["away"]) if player_is_home else String(m["home"])
 		var opponent: Dictionary = Score.get_team_dict(opponent_name)
 
-		s = float(opponent.get("strength", 0.8))
-		s = clamp(s, 0.6, 0.99)
-	else:
-		Score.player_is_home = true
-		s = clamp(s, 0.6, 0.99)
+                s = float(opponent.get("strength", 0.8))
+                s = clamp(s, 0.1, 0.99)
+        else:
+                Score.player_is_home = true
+                s = clamp(s, 0.1, 0.99)
 
 	# --- Настройка ИИ ---
 	ai = game_node.get_node("AiPaddle") as AiPaddle
@@ -67,8 +67,8 @@ func _on_score_changed(left: int, right: int) -> void:
 	var player_goals: int = left if Score.player_is_home else right
 	var ai_goals: int = right if Score.player_is_home else left
 	var diff: int = player_goals - ai_goals
-	ai.skill = clamp(base_skill + diff * 0.1, 0.4, 0.99)
-	_apply_ai_tuning()
+        ai.skill = clamp(base_skill + diff * 0.1, 0.1, 0.99)
+        _apply_ai_tuning()
 
 func _start_next_half() -> void:
 	current_half += 1
