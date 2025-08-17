@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://8wkf1f060q6x"]
+[gd_scene load_steps=23 format=3 uid="uid://8wkf1f060q6x"]
 
 [ext_resource type="Script" uid="uid://2xoilbwedro3" path="res://scenes/game.gd" id="1_gee14"]
 [ext_resource type="Texture2D" uid="uid://37rfb12sxmf4" path="res://assets/gfx/field.png" id="1_uwrxv"]
@@ -12,6 +12,7 @@
 [ext_resource type="FontFile" uid="uid://crbejkyhfw2bi" path="res://fonts/PressStart2P-Regular.ttf" id="10_kvpfn"]
 [ext_resource type="Script" uid="uid://cwbcr0civ3mn4" path="res://scenes/tournament_game.gd" id="12_dinhu"]
 [ext_resource type="Texture2D" uid="uid://dprt5p2umwgvv" path="res://assets/gfx/gazaev.png" id="13_kvuet"]
+[ext_resource type="PackedScene" uid="uid://bemiysc8cwgvo" path="res://scenes/time_scoreboard.tscn" id="14_timer"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_yqjtg"]
 size = Vector2(1932, 284)
@@ -144,30 +145,37 @@ stream = ExtResource("6_p57ef")
 [node name="ScoreboardBG" type="TextureRect" parent="UI"]
 light_mask = 4
 visibility_layer = 4
-offset_left = 649.0
-offset_top = 28.0
-offset_right = 2185.0
-offset_bottom = 1052.0
+offset_left = 419.0
+offset_top = 32.0
+offset_right = 1955.0
+offset_bottom = 1056.0
 scale = Vector2(0.298335, 0.302808)
 texture = ExtResource("9_vtaks")
 
 [node name="ScoreLeft" type="Label" parent="UI"]
-offset_left = 767.0
-offset_top = 135.0
-offset_right = 867.0
-offset_bottom = 272.0
+offset_left = 537.0
+offset_top = 139.0
+offset_right = 637.0
+offset_bottom = 276.0
 theme_override_fonts/font = ExtResource("10_kvpfn")
 theme_override_font_sizes/font_size = 100
 text = "0"
 
 [node name="ScoreRight" type="Label" parent="UI"]
-offset_left = 900.0
-offset_top = 133.0
-offset_right = 1000.0
-offset_bottom = 270.0
+offset_left = 670.0
+offset_top = 137.0
+offset_right = 770.0
+offset_bottom = 274.0
 theme_override_fonts/font = ExtResource("10_kvpfn")
 theme_override_font_sizes/font_size = 100
 text = "0"
+
+[node name="TimeScoreboard" parent="UI" instance=ExtResource("14_timer")]
+offset_left = 1250.0
+offset_top = 26.0
+offset_right = 1786.0
+offset_bottom = 1050.0
+scale = Vector2(1.52623, 1.04165)
 
 [node name="TextureRect" type="TextureRect" parent="UI"]
 offset_left = 1712.0

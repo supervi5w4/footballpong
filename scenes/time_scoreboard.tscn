@@ -1,0 +1,62 @@
+[gd_scene load_steps=4 format=3 uid="uid://bemiysc8cwgvo"]
+
+[ext_resource type="Script" uid="uid://b221pl5s5kr62" path="res://scripts/time_scoreboard.gd" id="1_time"]
+[ext_resource type="Texture2D" uid="uid://yg1ln8spbfcw" path="res://assets/gfx/scoreboard.png" id="2_scoreboard"]
+[ext_resource type="FontFile" uid="uid://crbejkyhfw2bi" path="res://fonts/PressStart2P-Regular.ttf" id="3_font"]
+
+[node name="TimeScoreboard" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 1948.0
+offset_top = 129.0
+offset_right = 2484.0
+offset_bottom = 1153.0
+script = ExtResource("1_time")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.298335, 0.302808)
+texture = ExtResource("2_scoreboard")
+
+[node name="TimeLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -503.0
+offset_top = -403.0
+offset_right = -203.0
+offset_bottom = -303.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 60
+text = "00:00"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PeriodLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -30.0
+offset_top = 60.0
+offset_right = 30.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 30
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1

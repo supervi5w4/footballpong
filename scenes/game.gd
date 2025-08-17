@@ -4,9 +4,11 @@
 #   - управление раундами
 #   - работу с мячом и ракетками
 #   - обновление табло (UI)
+#   - управление временем матча
 # Требует:
 #   - Score (Autoload синглтон)
 #   - Label-узлы: UI/ScoreLeft и UI/ScoreRight
+#   - TimeScoreboard: UI/TimeScoreboard
 # ------------------------------------------------------------
 
 extends Node2D
@@ -19,6 +21,7 @@ class_name Game
 
 @onready var score_left_label: Label = $UI/ScoreLeft
 @onready var score_right_label: Label = $UI/ScoreRight
+@onready var time_scoreboard: TimeScoreboard = $UI/TimeScoreboard
 
 var _game_started: bool = false
 
@@ -31,12 +34,20 @@ func _ready() -> void:
 		YandexSDK.gameplay_started()
 		_game_started = true
 	
+	# Запускаем таймер матча
+	if time_scoreboard:
+		time_scoreboard.start_match()
+	
 	reset_round()
 
 func _exit_tree() -> void:
 	# Останавливаем аналитику игрового процесса при выходе
 	if YandexSDK.is_working() and _game_started:
 		YandexSDK.gameplay_stopped()
+	
+	# Останавливаем таймер матча
+	if time_scoreboard:
+		time_scoreboard.stop_match()
 
 # Обновление табло
 func _update_scoreboard(_left: int = 0, _right: int = 0) -> void:
@@ -60,3 +71,19 @@ func reset_round() -> void:
 # Функция для показа рекламы между матчами
 func show_interstitial_between_matches() -> void:
 	YandexSDK.show_interstitial_between_matches()
+
+# Пауза матча
+func pause_match() -> void:
+	if time_scoreboard:
+		time_scoreboard.pause_match()
+
+# Возобновление матча
+func resume_match() -> void:
+	if time_scoreboard:
+		time_scoreboard.resume_match()
+
+# Получение таймера матча
+func get_match_timer() -> MatchTimer:
+	if time_scoreboard:
+		return time_scoreboard.get_match_timer()
+	return null

@@ -2,6 +2,7 @@
 # tournament_game.gd — Проведение матча в турнире
 # Динамически настраивает ИИ по силе соперника и ходу игры
 # Управляет двумя таймами и итогом
+# Интегрирован с табло времени
 # ------------------------------------------------------------
 
 extends Node
@@ -11,10 +12,12 @@ extends Node
 
 @onready var game_node: Node2D = get_parent() as Node2D
 @onready var message_label: Label = game_node.get_node("UI/MessageLabel") as Label
+@onready var time_scoreboard: TimeScoreboard = game_node.get_node("UI/TimeScoreboard") as TimeScoreboard
 
 var current_half: int = 0
 var ai: AiPaddle
 var base_skill: float = 0.8
+var match_timer: MatchTimer
 
 const SKILL_MIN := 0.10
 const SKILL_MAX := 0.99
@@ -23,6 +26,13 @@ func _ready() -> void:
 	# --- Сброс счёта ---
 	Score.left = 0
 	Score.right = 0
+
+	# --- Инициализация таймера матча ---
+	if time_scoreboard:
+		match_timer = time_scoreboard.get_match_timer()
+		if match_timer:
+			match_timer.period_changed.connect(_on_period_changed)
+			match_timer.match_ended.connect(_on_match_ended)
 
 	# --- Инициализация силы соперника ---
 	var idx: int = Score.current_match
@@ -59,9 +69,15 @@ func _ready() -> void:
 	_start_next_half()
 
 func _exit_tree() -> void:
-	# чисто отключимся от сигнала
+	# чисто отключимся от сигналов
 	if Score.score_changed.is_connected(_on_score_changed):
 		Score.score_changed.disconnect(_on_score_changed)
+	
+	if match_timer:
+		if match_timer.period_changed.is_connected(_on_period_changed):
+			match_timer.period_changed.disconnect(_on_period_changed)
+		if match_timer.match_ended.is_connected(_on_match_ended):
+			match_timer.match_ended.disconnect(_on_match_ended)
 
 func _apply_ai_tuning() -> void:
 	if ai == null:
@@ -88,12 +104,40 @@ func _on_score_changed(left: int, right: int) -> void:
 	ai.skill = clamp(base_skill + diff * 0.1, SKILL_MIN, SKILL_MAX)
 	_apply_ai_tuning()
 
+func _on_period_changed(period: int) -> void:
+	"""Обработчик смены периода"""
+	print("Турнир: Период изменился на ", period)
+	if period == 2 and current_half == 1:
+		# Второй тайм начался
+		current_half = 2
+
+func _on_match_ended() -> void:
+	"""Обработчик окончания матча"""
+	print("Турнир: Матч завершен")
+	_finalize_match()
+
 func _start_next_half() -> void:
 	current_half += 1
 	message_label.visible = false
 	game_node.call("reset_round")
-	await get_tree().create_timer(half_duration).timeout
-	_on_half_finished()
+	
+	# Используем новый таймер матча
+	if match_timer:
+		print("Турнир: Ожидание окончания тайма по таймеру")
+		# Ждем окончания первого тайма (45 минут)
+		if current_half == 1:
+			# Ждем смены периода на 2
+			await match_timer.period_changed
+			print("Турнир: Первый тайм закончился")
+		# Ждем окончания второго тайма (90 минут)
+		await match_timer.match_ended
+		print("Турнир: Второй тайм закончился")
+		_on_half_finished()
+	else:
+		# Fallback на старую логику (не должно происходить)
+		print("Турнир: Используется fallback таймер")
+		await get_tree().create_timer(half_duration).timeout
+		_on_half_finished()
 
 func _on_half_finished() -> void:
 	if current_half == 1:
