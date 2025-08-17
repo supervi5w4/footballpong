@@ -12,16 +12,17 @@ class_name TimeScoreboard
 @onready var time_label: Label = $TimeLabel
 @onready var period_label: Label = $PeriodLabel
 
-var match_timer: MatchTimer
+var match_timer: Node
 
 func _ready() -> void:
 	# Создаем таймер матча
-	match_timer = MatchTimer.new()
+	match_timer = preload("res://scripts/match_timer.gd").new()
 	add_child(match_timer)
 	
 	# Подключаем сигналы
 	match_timer.time_updated.connect(_on_time_updated)
 	match_timer.period_changed.connect(_on_period_changed)
+	match_timer.first_half_ended.connect(_on_first_half_ended)
 	
 	# Инициализируем отображение
 	_update_display()
@@ -48,6 +49,10 @@ func reset_match() -> void:
 	"""Сброс матча"""
 	match_timer.reset_match()
 
+func start_second_half() -> void:
+	"""Запуск второго тайма"""
+	match_timer.start_second_half()
+
 func _on_time_updated(_minutes: int, _seconds: int, _period: int) -> void:
 	"""Обработчик обновления времени"""
 	print("TimeScoreboard: Получил обновление времени")
@@ -56,6 +61,11 @@ func _on_time_updated(_minutes: int, _seconds: int, _period: int) -> void:
 func _on_period_changed(_period: int) -> void:
 	"""Обработчик смены периода"""
 	print("TimeScoreboard: Получил смену периода")
+	_update_display()
+
+func _on_first_half_ended() -> void:
+	"""Обработчик окончания первого тайма"""
+	print("TimeScoreboard: Первый тайм завершен")
 	_update_display()
 
 func _update_display() -> void:
@@ -70,6 +80,6 @@ func _update_display() -> void:
 		period_label.text = period_string
 		print("TimeScoreboard: Обновил период на ", period_string)
 
-func get_match_timer() -> MatchTimer:
+func get_match_timer() -> Node:
 	"""Возвращает таймер матча"""
 	return match_timer

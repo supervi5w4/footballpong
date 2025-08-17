@@ -17,7 +17,7 @@ extends Node
 var current_half: int = 0
 var ai: AiPaddle
 var base_skill: float = 0.8
-var match_timer: MatchTimer
+var match_timer: Node
 
 const SKILL_MIN := 0.10
 const SKILL_MAX := 0.99
@@ -32,6 +32,7 @@ func _ready() -> void:
 		match_timer = time_scoreboard.get_match_timer()
 		if match_timer:
 			match_timer.period_changed.connect(_on_period_changed)
+			match_timer.first_half_ended.connect(_on_first_half_ended)
 			match_timer.match_ended.connect(_on_match_ended)
 
 	# --- Инициализация силы соперника ---
@@ -111,6 +112,11 @@ func _on_period_changed(period: int) -> void:
 		# Второй тайм начался
 		current_half = 2
 
+func _on_first_half_ended() -> void:
+	"""Обработчик окончания первого тайма"""
+	print("Турнир: Первый тайм завершен")
+	_on_half_finished()
+
 func _on_match_ended() -> void:
 	"""Обработчик окончания матча"""
 	print("Турнир: Матч завершен")
@@ -118,35 +124,65 @@ func _on_match_ended() -> void:
 
 func _start_next_half() -> void:
 	current_half += 1
-	message_label.visible = false
+	if message_label:
+		message_label.visible = false
 	game_node.call("reset_round")
 	
-	# Используем новый таймер матча
-	if match_timer:
-		print("Турнир: Ожидание окончания тайма по таймеру")
-		# Ждем окончания первого тайма (45 минут)
-		if current_half == 1:
-			# Ждем смены периода на 2
-			await match_timer.period_changed
-			print("Турнир: Первый тайм закончился")
-		# Ждем окончания второго тайма (90 минут)
-		await match_timer.match_ended
-		print("Турнир: Второй тайм закончился")
-		_on_half_finished()
-	else:
-		# Fallback на старую логику (не должно происходить)
-		print("Турнир: Используется fallback таймер")
-		await get_tree().create_timer(half_duration).timeout
-		_on_half_finished()
+	# Запускаем матч
+	if time_scoreboard:
+		time_scoreboard.start_match()
+	
+	print("Турнир: Матч запущен")
 
 func _on_half_finished() -> void:
 	if current_half == 1:
-		message_label.text = "Второй тайм через %d сек" % int(pause_between_halves)
-		message_label.visible = true
-		await get_tree().create_timer(pause_between_halves).timeout
-		_start_next_half()
+		# Останавливаем мяч
+		var ball = game_node.get_node_or_null("Ball")
+		if ball:
+			ball.freeze = true
+		
+		if message_label:
+			message_label.text = "Второй тайм через %d сек" % int(pause_between_halves)
+			message_label.visible = true
+		var tree = get_tree()
+		if tree != null:
+			await tree.create_timer(pause_between_halves).timeout
+		
+		# Запускаем второй тайм с перезапуском мяча
+		_start_second_half()
 	else:
 		_finalize_match()
+
+func _start_second_half() -> void:
+	"""Запуск второго тайма с возвратом мяча в центр"""
+	print("Турнир: Запуск второго тайма")
+	
+	# Размораживаем мяч перед сбросом
+	var ball = game_node.get_node_or_null("Ball")
+	if ball:
+		ball.freeze = false
+	
+	# Запускаем второй тайм
+	if time_scoreboard:
+		time_scoreboard.start_second_half()
+	current_half = 2
+	
+	# Только сбрасываем позиции ракеток, НЕ трогаем мяч
+	var player_paddle = game_node.get_node_or_null("PlayerPaddle")
+	var ai_paddle = game_node.get_node_or_null("AiPaddle")
+	
+	if player_paddle and player_paddle.has_method("reset_position"):
+		player_paddle.reset_position()
+
+	if ai_paddle and ai_paddle.has_method("reset_position"):
+		ai_paddle.reset_position()
+	
+	# Мяч уже в центре после заморозки, просто запускаем его
+	if ball:
+		ball._teleport_to_spawn()
+		ball._serve()
+	
+	print("Турнир: Второй тайм начался")
 
 func _finalize_match() -> void:
 	var idx: int = Score.current_match
@@ -190,9 +226,14 @@ func _finalize_match() -> void:
 			at["points"] += 1
 
 	# --- Финализация: выход в меню или следующий турнирный матч ---
+	var tree = get_tree()
+	if tree == null:
+		print("Турнир: get_tree() вернул null, пропускаем смену сцены")
+		return
+		
 	if Score.rounds.is_empty():
-		get_tree().change_scene_to_file("res://scenes/menu.tscn")
+		tree.change_scene_to_file("res://scenes/menu.tscn")
 		return
 
 	Score.simulate_bot_matches()
-	get_tree().change_scene_to_file("res://scenes/tournament_calendar.tscn")
+	tree.change_scene_to_file("res://scenes/tournament_calendar.tscn")

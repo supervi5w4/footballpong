@@ -29,6 +29,12 @@ func _ready() -> void:
 	# Подключаемся к сигналу обновления счёта
 	Score.score_changed.connect(_update_scoreboard)
 	
+	# Подключаемся к сигналу окончания первого тайма
+	if time_scoreboard:
+		var match_timer = time_scoreboard.get_match_timer()
+		if match_timer:
+			match_timer.first_half_ended.connect(_on_first_half_ended)
+	
 	# Запускаем аналитику игрового процесса
 	if YandexSDK.is_working():
 		YandexSDK.gameplay_started()
@@ -83,7 +89,47 @@ func resume_match() -> void:
 		time_scoreboard.resume_match()
 
 # Получение таймера матча
-func get_match_timer() -> MatchTimer:
+func get_match_timer() -> Node:
 	if time_scoreboard:
 		return time_scoreboard.get_match_timer()
 	return null
+
+# Обработчик окончания первого тайма
+func _on_first_half_ended() -> void:
+	print("Game: Первый тайм завершен, останавливаем игру")
+	
+	# Останавливаем мяч
+	if ball:
+		ball.freeze = true
+	
+	# Показываем сообщение о паузе между таймами
+	await get_tree().create_timer(2.0).timeout
+	
+	# Возвращаем мяч в центр и запускаем второй тайм
+	_start_second_half()
+
+func _start_second_half() -> void:
+	"""Запуск второго тайма с возвратом мяча в центр"""
+	print("Game: Запуск второго тайма")
+	
+	# Размораживаем мяч перед сбросом
+	if ball:
+		ball.freeze = false
+	
+	# Запускаем второй тайм
+	if time_scoreboard:
+		time_scoreboard.start_second_half()
+	
+	# Только сбрасываем позиции ракеток, НЕ трогаем мяч
+	if player_paddle and player_paddle.has_method("reset_position"):
+		player_paddle.reset_position()
+
+	if ai_paddle and ai_paddle.has_method("reset_position"):
+		ai_paddle.reset_position()
+	
+	# Мяч уже в центре после заморозки, просто запускаем его
+	if ball:
+		ball._teleport_to_spawn()
+		ball._serve()
+	
+	print("Game: Второй тайм начался")
