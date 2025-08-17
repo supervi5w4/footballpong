@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://wp5sqcamggfc"]
+[gd_scene load_steps=4 format=3 uid="uid://wp5sqcamggfc"]
 
 [ext_resource type="Script" uid="uid://bmrfriqn04wno" path="res://scenes/tournament_calendar.gd" id="1_ke7y2"]
+[ext_resource type="Texture2D" uid="uid://37rfb12sxmf4" path="res://assets/gfx/field.png" id="2_ejpit"]
 [ext_resource type="FontFile" uid="uid://crbejkyhfw2bi" path="res://fonts/PressStart2P-Regular.ttf" id="2_v305x"]
 
 [node name="TournamentCalendar" type="Control"]
@@ -10,6 +11,13 @@ size_flags_horizontal = 4
 size_flags_vertical = 4
 script = ExtResource("1_ke7y2")
 
+[node name="Bg" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 1536.0
+offset_bottom = 1024.0
+scale = Vector2(1.3, 1.3)
+texture = ExtResource("2_ejpit")
+
 [node name="Label" type="Label" parent="."]
 layout_direction = 2
 layout_mode = 1
@@ -18,13 +26,14 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = 636.0
-offset_top = 48.0
-offset_right = 908.0
-offset_bottom = 64.0
+offset_left = 767.0
+offset_top = 310.0
+offset_right = 1039.0
+offset_bottom = 326.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_fonts/font = ExtResource("2_v305x")
+theme_override_font_sizes/font_size = 22
 text = "Календарь турнира"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="."]
@@ -34,10 +43,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = 691.0
-offset_top = 96.0
-offset_right = 1041.0
-offset_bottom = 496.0
+offset_left = 678.0
+offset_top = 251.0
+offset_right = 1028.0
+offset_bottom = 651.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -78,8 +87,10 @@ text = "Симулировать матч"
 
 [node name="TabContainer" type="Control" parent="."]
 anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+offset_left = -168.0
+offset_top = 251.0
+offset_right = -128.0
+offset_bottom = 291.0
 
 [node name="CalendarTab" type="VBoxContainer" parent="TabContainer"]
 layout_mode = 0
@@ -92,9 +103,9 @@ tooltip_text = "Календарь"
 [node name="TableTab" type="VBoxContainer" parent="TabContainer"]
 layout_mode = 0
 offset_left = 1105.0
-offset_top = 138.0
+offset_top = 143.0
 offset_right = 1145.0
-offset_bottom = 178.0
+offset_bottom = 183.0
 tooltip_text = "Таблица"
 
 [node name="RowsContainer" type="GridContainer" parent="TabContainer/TableTab"]
@@ -104,7 +115,7 @@ layout_mode = 2
 [node name="RoundLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 748.0
-offset_top = 73.0
-offset_right = 788.0
-offset_bottom = 96.0
+offset_left = 705.0
+offset_top = 390.0
+offset_right = 745.0
+offset_bottom = 413.0

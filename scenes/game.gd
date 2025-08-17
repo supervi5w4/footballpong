@@ -22,6 +22,7 @@ class_name Game
 @onready var score_left_label: Label = $UI/ScoreLeft
 @onready var score_right_label: Label = $UI/ScoreRight
 @onready var time_scoreboard: TimeScoreboard = $UI/TimeScoreboard
+@onready var message_label: Label = $UI/MessageLabel
 
 var _game_started: bool = false
 
@@ -29,22 +30,28 @@ func _ready() -> void:
 	# Подключаемся к сигналу обновления счёта
 	Score.score_changed.connect(_update_scoreboard)
 	
-	# Подключаемся к сигналу окончания первого тайма
+	# Проверяем, используется ли режим турнира (есть отдельный контроллер)
+	var in_tournament: bool = (get_node_or_null("TournamentController") != null)
+	
+	# Подключаемся к сигналам таймера только в обычном режиме
 	if time_scoreboard:
 		var match_timer = time_scoreboard.get_match_timer()
-		if match_timer:
+		if match_timer and not in_tournament:
 			match_timer.first_half_ended.connect(_on_first_half_ended)
+			match_timer.match_ended.connect(_on_match_ended)
 	
 	# Запускаем аналитику игрового процесса
 	if YandexSDK.is_working():
 		YandexSDK.gameplay_started()
 		_game_started = true
 	
-	# Запускаем таймер матча
-	if time_scoreboard:
-		time_scoreboard.start_match()
-	
-	reset_round()
+	# Запускаем таймер матча и сбрасываем позиции только вне турнира.
+	# В режиме турнира это делает TournamentController.
+	if not in_tournament:
+		if time_scoreboard:
+			time_scoreboard.start_match()
+		
+		reset_round()
 
 func _exit_tree() -> void:
 	# Останавливаем аналитику игрового процесса при выходе
@@ -133,3 +140,20 @@ func _start_second_half() -> void:
 		ball._serve()
 	
 	print("Game: Второй тайм начался")
+
+# Обработчик окончания матча
+func _on_match_ended() -> void:
+	"""Обработчик окончания матча"""
+	print("Game: Матч завершен")
+	
+	# Показываем надпись "Матч окончен" на 3 секунды
+	if message_label:
+		message_label.text = "Матч окончен"
+		message_label.visible = true
+	
+	# Ждем 3 секунды
+	await get_tree().create_timer(3.0).timeout
+	
+	# Скрываем надпись
+	if message_label:
+		message_label.visible = false

@@ -1,12 +1,20 @@
-[gd_scene load_steps=3 format=3 uid="uid://ni5xonhoiv4t"]
+[gd_scene load_steps=4 format=3 uid="uid://ni5xonhoiv4t"]
 
 [ext_resource type="Script" uid="uid://de732wytliv03" path="res://scenes/final_table.gd" id="1_iws4m"]
 [ext_resource type="FontFile" uid="uid://crbejkyhfw2bi" path="res://fonts/PressStart2P-Regular.ttf" id="2_7y8kr"]
+[ext_resource type="Texture2D" uid="uid://37rfb12sxmf4" path="res://assets/gfx/field.png" id="3_7y8kr"]
 
 [node name="FinalTable" type="Control"]
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_iws4m")
+
+[node name="Bg" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 1536.0
+offset_bottom = 1024.0
+scale = Vector2(1.3, 1.3)
+texture = ExtResource("3_7y8kr")
 
 [node name="TitleLabel" type="Label" parent="."]
 layout_mode = 0

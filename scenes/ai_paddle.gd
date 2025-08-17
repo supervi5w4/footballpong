@@ -56,10 +56,12 @@ var _state: State = State.DEFEND
 var _ball: RigidBody2D
 var _player: CharacterBody2D
 var _target_pos: Vector2 = Vector2.ZERO
+var _smooth_target_pos: Vector2 = Vector2.ZERO  # Плавная цель для движения
 var _time_to_next_think: float = 0.0
 var _fake_timer: float = 0.0
 var start_pos: Vector2 = Vector2.ZERO
 var _is_first_hit: bool = true
+var _smooth_factor: float = 0.15  # Фактор плавности (0.1 = очень плавно, 0.3 = быстро)
 
 # ---------------- READY ----------------
 func _ready() -> void:
@@ -70,11 +72,13 @@ func _ready() -> void:
 		set_physics_process(false)
 		return
 	start_pos = global_position
+	_smooth_target_pos = global_position  # Инициализируем плавную цель
 	_think()
 	_schedule_next_think()
 
 func reset_position() -> void:
 	global_position = start_pos
+	_smooth_target_pos = start_pos  # Сбрасываем плавную цель
 	velocity = Vector2.ZERO
 	_state = State.DEFEND
 	_time_to_next_think = 0.0
@@ -133,6 +137,8 @@ func _schedule_next_think() -> void:
 	var weak := 1.0 - skill
 	var react := REACTION_BASE + weak * weak * 0.4
 	react *= randf_range(0.8, 1.4) * float(style.error_mult) * (1.0 + weak)
+	# Увеличиваем интервал обновления для более плавного движения
+	react *= 1.5  # Увеличили интервал на 50%
 	_time_to_next_think = react
 
 # ---------------- THINK ----------------
@@ -357,14 +363,24 @@ func _clamp_advancement() -> void:
 # ---------------- Movement & Clamp X ----------------
 func _move() -> void:
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
-	var dir: Vector2 = _target_pos - global_position
+	
+	# Плавно обновляем целевую позицию
+	_smooth_target_pos = _smooth_target_pos.lerp(_target_pos, _smooth_factor)
+	
+	# Вычисляем направление к плавной цели
+	var dir: Vector2 = _smooth_target_pos - global_position
 	if dir.length() < 2.0:
 		velocity = Vector2.ZERO
 		return
+	
 	dir = dir.normalized()
-	var jitter_mag: float = (1.0 - skill) * 0.5
+	
+	# Уменьшаем джиттер для более плавного движения
+	var jitter_mag: float = (1.0 - skill) * 0.3  # Уменьшили с 0.5 до 0.3
 	var speed_jitter: float = randf_range(1.0 - jitter_mag, 1.0 + jitter_mag)
 	var speed: float = BASE_SPEED * float(style.speed_mul) * speed_jitter * lerp(0.4, 1.0, skill)
+	
+	# Настройки скорости в зависимости от состояния
 	match _state:
 		State.ATTACK:
 			speed *= 1.2
@@ -374,7 +390,14 @@ func _move() -> void:
 			speed *= 1.1
 		State.EDGE_GUARD:
 			speed *= 0.9
-	velocity = dir * speed
+	
+	# Применяем дополнительное сглаживание скорости
+	var current_speed = velocity.length()
+	var target_speed = speed
+	var speed_smooth_factor = 0.1  # Плавное изменение скорости
+	var new_speed = lerp(current_speed, target_speed, speed_smooth_factor)
+	
+	velocity = dir * new_speed
 	move_and_slide()
 	_clamp_x()
 

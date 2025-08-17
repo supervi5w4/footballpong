@@ -157,6 +157,10 @@ func _start_second_half() -> void:
 	"""Запуск второго тайма с возвратом мяча в центр"""
 	print("Турнир: Запуск второго тайма")
 	
+	# Скрываем надпись о паузе между таймами
+	if message_label:
+		message_label.visible = false
+	
 	# Размораживаем мяч перед сбросом
 	var ball = game_node.get_node_or_null("Ball")
 	if ball:
@@ -185,6 +189,18 @@ func _start_second_half() -> void:
 	print("Турнир: Второй тайм начался")
 
 func _finalize_match() -> void:
+	# Показываем надпись "Матч окончен" на 3 секунды
+	if message_label:
+		message_label.text = "Матч окончен"
+		message_label.visible = true
+	
+	# Ждем 3 секунды
+	await get_tree().create_timer(3.0).timeout
+	
+	# Скрываем надпись
+	if message_label:
+		message_label.visible = false
+	
 	var idx: int = Score.current_match
 
 	if idx >= 0 and idx < Score.matches.size():
