@@ -18,6 +18,13 @@ function InitGame(params, callback) {
 }
 
 function GameReady() {
+	// Вызываем Game Ready API
+	if (ysdk.features.GameReadyAPI) {
+		ysdk.features.GameReadyAPI.gameReady();
+		console.log("Game Ready API called");
+	}
+	
+	// Также вызываем Loading API для совместимости
 	ysdk.features.LoadingAPI?.ready();
 	console.log("Game ready");
 }

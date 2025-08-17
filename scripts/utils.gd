@@ -23,7 +23,8 @@ static func reflect(
 	var paddle_tangent_speed: float = paddle_vel.dot(tangent)
 
 	# 2. Отражаем скорость от нормали и добавляем ускорение от движения ракетки
-	var accel_factor: float = 1.0 + paddle_normal_speed * 0.0001
+	# Увеличиваем множитель ускорения для более заметного эффекта
+	var accel_factor: float = 1.0 + abs(paddle_normal_speed) * 0.0005  # Увеличено с 0.0001 до 0.0005
 	var v_new: Vector2 = old_vel.bounce(normal) * accel_factor
 
 	# 3. Вычисляем спин (по тангенциальной составляющей скорости ракетки)

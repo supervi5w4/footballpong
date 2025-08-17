@@ -48,7 +48,7 @@ position = Vector2(962, 533)
 scale = Vector2(1.25651, 1.14258)
 texture = ExtResource("1_uwrxv")
 
-[node name="Ball" parent="." groups=["ball"] instance=ExtResource("2_yqjtg")]
+[node name="Ball" parent="." instance=ExtResource("2_yqjtg")]
 position = Vector2(885, 528)
 rotation = -0.523598
 can_sleep = false

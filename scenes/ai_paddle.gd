@@ -118,6 +118,9 @@ func _handle_ball_collisions() -> void:
 
 			rb.linear_velocity  = info["vel"]
 			rb.angular_velocity = info["spin"]
+			# Увеличиваем скорость мяча при ударе
+			if rb is Ball:
+				rb.boost_speed()
 
 func _check_first_hit_reset() -> void:
 	if not _is_first_hit:

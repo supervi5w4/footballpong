@@ -11,6 +11,7 @@ signal leaderboard_player_entry_loaded(data)
 signal leaderboard_entries_loaded(data)
 signal stats_loaded(stats: Dictionary)
 signal check_auth(answer: bool)
+signal game_ready_api_called()
 
 
 var is_game_initialized : bool = false
@@ -53,6 +54,8 @@ func _ready() -> void:
 	if is_working():
 		get_window().focus_entered.connect(_update_mute)
 		get_window().focus_exited.connect(_update_mute)
+		# Автоматически инициализируем игру при запуске
+		init_game()
 
 
 func _update_mute() -> void:
@@ -126,6 +129,8 @@ func game_ready() -> void:
 	if not is_game_ready:
 		is_game_ready = true
 		window.GameReady()
+		game_ready_api_called.emit()
+		print("Game Ready API called successfully")
 
 # Analytics
 func gameplay_started() -> void:
@@ -354,6 +359,9 @@ func _game_initialized(args) -> void:
 	else: payload = args[0].payload
 	is_game_initialized = true
 	TranslationServer.set_locale(lang)
+	print("Yandex SDK: Game initialized successfully")
+	print("Yandex SDK: App ID: ", app_id)
+	print("Yandex SDK: Language: ", lang)
 	game_initialized.emit()
 
 
@@ -365,3 +373,29 @@ func _player_initialized(args) -> void:
 func _leaderboard_initialized(args) -> void:
 	is_leaderboard_initialized = true
 	leaderboard_initialized.emit()
+
+# Функция для показа рекламы между матчами
+func show_interstitial_between_matches() -> void:
+	if not OS.has_feature("yandex"):
+		return
+	if not is_game_initialized:
+		init_game()
+		await game_initialized
+	show_interstitial_ad()
+
+# Функция для показа рекламы при забивании гола
+func show_interstitial_on_goal() -> void:
+	if not OS.has_feature("yandex"):
+		return
+	if not is_game_initialized:
+		init_game()
+		await game_initialized
+	# Показываем рекламу с вероятностью 30%
+	if randf() < 0.3:
+		show_interstitial_ad()
+
+# Функция для проверки доступности Game Ready API
+func is_game_ready_api_available() -> bool:
+	if not OS.has_feature("yandex"):
+		return false
+	return is_game_initialized

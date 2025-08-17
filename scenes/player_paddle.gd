@@ -81,6 +81,9 @@ func _handle_ball_collisions() -> void:
 			var info: Dictionary = Utils.reflect(rb.linear_velocity, normal, velocity)
 			rb.linear_velocity  = info["vel"]
 			rb.angular_velocity = info["spin"]
+			# Увеличиваем скорость мяча при ударе
+			if rb is Ball:
+				rb.boost_speed()
 
 func _resolve_half_size() -> Vector2:
 	# 1) Явное значение

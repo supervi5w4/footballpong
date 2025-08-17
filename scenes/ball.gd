@@ -3,14 +3,16 @@ class_name Ball
 
 @export var spawn_marker_path: NodePath
 @export var serve_angle_deg: float = 15.0   # разброс по вертикали при подаче (±градусы)
+@export_range(1.05, 1.25, 0.01) var speed_boost_per_hit: float = 1.15  # Ускорение при каждом ударе (5-25%)
+@export_range(1200.0, 2000.0, 50.0) var speed_limit: float = 1600.0  # Максимальная скорость мяча
 
 const RESPAWN_DELAY := 0.5
 const SERVE_SPEED   := 1200.0  # Increased serve speed
-const SPEED_LIMIT   := 1600.0  # Increased top speed after ricochets
 const MIN_SPEED     := 800.0   # Keep ball lively after bounces
 
 var _spawn_point: Vector2 = Vector2.ZERO
 var _rng := RandomNumberGenerator.new()
+var _current_speed_multiplier: float = 1.0  # Текущий множитель скорости
 
 func _ready() -> void:
 	_rng.randomize()
@@ -31,6 +33,29 @@ func _serve() -> void:
 	linear_velocity = dir * SERVE_SPEED
 	angular_velocity = 0.0
 	sleeping = false
+	# Сбрасываем множитель скорости при подаче
+	_current_speed_multiplier = 1.0
+
+# Функция для увеличения скорости мяча при ударе ракеткой
+func boost_speed() -> void:
+	var current_speed = linear_velocity.length()
+	
+	# Увеличиваем скорость на 15-20% при каждом ударе
+	var speed_boost = speed_boost_per_hit
+	
+	# Если скорость уже близка к лимиту, уменьшаем ускорение
+	if current_speed > speed_limit * 0.8:
+		speed_boost = lerp(1.0, speed_boost_per_hit, 0.5)  # Уменьшаем ускорение наполовину
+	
+	var new_speed = current_speed * speed_boost
+	
+	# Применяем ограничение максимальной скорости
+	if new_speed > speed_limit:
+		new_speed = speed_limit
+	
+	# Применяем новую скорость, сохраняя направление
+	if current_speed > 0:
+		linear_velocity = linear_velocity.normalized() * new_speed
 
 # ---------- helpers ----------
 func _find_spawn() -> void:
@@ -54,7 +79,7 @@ func _teleport_to_spawn() -> void:
 
 func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	var v := linear_velocity.length()
-	if v > SPEED_LIMIT:
-		linear_velocity = linear_velocity.normalized() * SPEED_LIMIT
+	if v > speed_limit:
+		linear_velocity = linear_velocity.normalized() * speed_limit
 	elif v > 0.0 and v < MIN_SPEED:
 		linear_velocity = linear_velocity.normalized() * MIN_SPEED

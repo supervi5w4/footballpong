@@ -7,7 +7,7 @@
 [sub_resource type="CircleShape2D" id="CircleShape2D_4dx81"]
 radius = 19.57
 
-[node name="Ball" type="RigidBody2D"]
+[node name="Ball" type="RigidBody2D" groups=["ball"]]
 physics_material_override = ExtResource("1_f7cbr")
 gravity_scale = 0.0
 contact_monitor = true

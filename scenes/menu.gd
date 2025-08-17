@@ -6,16 +6,30 @@ extends Control
 #@onready var exit_btn : Button = %ExitBtn        # Кнопка «Выход» (если используется)
 
 func _ready() -> void:
-	# Подключаем сигналы нажатия к методам
+	# Подключаем сигналы нажатия на методы
 	play_btn.pressed.connect(_on_play_pressed)
 	tournament_btn.pressed.connect(_on_tournament_pressed)
 	# exit_btn.pressed.connect(_on_exit_pressed)
+	
+	# Вызываем Game Ready API после загрузки игры
+	if YandexSDK.is_working():
+		YandexSDK.game_ready()
 
 func _on_play_pressed() -> void:
+	# Показываем рекламу перед переходом к игре
+	if YandexSDK.is_working():
+		YandexSDK.show_interstitial_ad()
+		# Ждем завершения показа рекламы
+		await YandexSDK.interstitial_ad
 	# Переход к игре
 	get_tree().change_scene_to_file("res://scenes/game.tscn")
 
 func _on_tournament_pressed() -> void:
+	# Показываем рекламу перед переходом к турниру
+	if YandexSDK.is_working():
+		YandexSDK.show_interstitial_ad()
+		# Ждем завершения показа рекламы
+		await YandexSDK.interstitial_ad
 	# Переход к сцене выбора команд для турнира (создадим её на следующем шаге)
 	get_tree().change_scene_to_file("res://scenes/tournament_menu.tscn")
 
