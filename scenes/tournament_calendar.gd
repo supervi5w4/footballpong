@@ -1,154 +1,239 @@
 # scenes/tournament_calendar.gd
 extends Control
 
-@onready var round_label    : Label         = %RoundLabel
-@onready var matches_list   : VBoxContainer = %MatchesList
-@onready var play_next_btn  : Button        = %PlayNextBtn
-@onready var simulate_btn   : Button        = %SimulateBtn
-@onready var rows_container : GridContainer = %RowsContainer
-
-const TABLE_COLUMNS : int = 5
+@onready var round_label : Label = %RoundLabel
+@onready var table_rows_container : VBoxContainer = %TableRowsContainer
+@onready var top_rounds_container : HBoxContainer = %TopRoundsContainer
+@onready var bottom_rounds_container : HBoxContainer = %BottomRoundsContainer
+@onready var play_next_btn : Button = %PlayNextBtn
+@onready var simulate_btn : Button = %SimulateBtn
 
 func _ready() -> void:
-	rows_container.columns = TABLE_COLUMNS
 	play_next_btn.pressed.connect(_on_play_next_pressed)
 	simulate_btn.pressed.connect(_on_simulate_pressed)
 	_update_round_info()
 
 func _notification(what: int) -> void:
 	# Обновляем календарь при возврате на экран
-	if what == NOTIFICATION_ENTER_TREE and round_label and matches_list and rows_container:
+	if what == NOTIFICATION_ENTER_TREE and round_label and table_rows_container:
 		_update_round_info()
 
 func _update_round_info() -> void:
 	var total_rounds : int = Score.rounds.size()
 	if round_label:
 		round_label.text = "Тур %d из %d" % [Score.current_round + 1, total_rounds]
-	if matches_list:
-		_render_calendar()  # Перерисовываем календарь с обновленной подсветкой
-	if rows_container:
+	if table_rows_container:
 		_render_table()
+	if top_rounds_container and bottom_rounds_container:
+		_render_calendar()
 
-func _render_calendar() -> void:
-	if not matches_list:
+func _render_table() -> void:
+	if not table_rows_container:
 		return
 		
-	# Очищаем список матчей
-	for child in matches_list.get_children():
+	# Очищаем таблицу
+	for child in table_rows_container.get_children():
 		child.queue_free()
 	
-	# Создаем основной контейнер для разделения на две части
-	var main_container = VBoxContainer.new()
-	main_container.custom_minimum_size = Vector2(0, 600)  # Увеличиваем высоту для лучшего отображения
-	main_container.add_theme_constant_override("separation", 30)  # Увеличиваем отступ между рядами
+	# Получаем отсортированные команды
+	var sorted_teams : Array = Score.teams.duplicate()
+	sorted_teams.sort_custom(_compare_teams)
 	
-	# Создаем контейнер для верхних 3 туров
-	var top_container = HBoxContainer.new()
-	top_container.custom_minimum_size = Vector2(0, 250)
-	top_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top_container.add_theme_constant_override("separation", 15)  # Увеличиваем отступ между панелями
+	# Создаем строки таблицы
+	for i in range(sorted_teams.size()):
+		var team : Dictionary = sorted_teams[i]
+		var team_name : String = String(team["name"])
+		var points : int = int(team["points"])
+		var goals_for : int = int(team["goals_for"])
+		var goals_against : int = int(team["goals_against"])
+		var diff : int = goals_for - goals_against
+		
+		# Создаем строку
+		var row_container = HBoxContainer.new()
+		row_container.add_theme_constant_override("separation", 5)
+		row_container.custom_minimum_size = Vector2(0, 30)  # Фиксированная высота строки
+		
+		# Проверяем, является ли это командой игрока
+		var is_player_team : bool = (team_name == Score.player_team_name)
+		
+		# Создаем ячейки с фиксированной шириной
+		var name_cell = Label.new()
+		name_cell.text = _truncate_team_name(team_name)
+		name_cell.custom_minimum_size = Vector2(200, 0)
+		name_cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_cell.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name_cell.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		name_cell.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
+		name_cell.add_theme_font_size_override("font_size", 14)
+		name_cell.add_theme_color_override("font_color", Color.WHITE)
+		name_cell.clip_contents = true  # Обрезаем текст, если он не помещается
+		
+		var points_cell = Label.new()
+		points_cell.text = str(points)
+		points_cell.custom_minimum_size = Vector2(80, 0)
+		points_cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		points_cell.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		points_cell.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		points_cell.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
+		points_cell.add_theme_font_size_override("font_size", 14)
+		points_cell.add_theme_color_override("font_color", Color.WHITE)
+		
+		var gf_cell = Label.new()
+		gf_cell.text = str(goals_for)
+		gf_cell.custom_minimum_size = Vector2(80, 0)
+		gf_cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		gf_cell.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		gf_cell.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		gf_cell.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
+		gf_cell.add_theme_font_size_override("font_size", 14)
+		gf_cell.add_theme_color_override("font_color", Color.WHITE)
+		
+		var ga_cell = Label.new()
+		ga_cell.text = str(goals_against)
+		ga_cell.custom_minimum_size = Vector2(80, 0)
+		ga_cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		ga_cell.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		ga_cell.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		ga_cell.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
+		ga_cell.add_theme_font_size_override("font_size", 14)
+		ga_cell.add_theme_color_override("font_color", Color.WHITE)
+		
+		var diff_cell = Label.new()
+		diff_cell.text = str(diff)
+		diff_cell.custom_minimum_size = Vector2(80, 0)
+		diff_cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		diff_cell.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		diff_cell.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		diff_cell.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
+		diff_cell.add_theme_font_size_override("font_size", 14)
+		diff_cell.add_theme_color_override("font_color", Color.WHITE)
+		
+		# Добавляем ячейки в строку
+		row_container.add_child(name_cell)
+		row_container.add_child(points_cell)
+		row_container.add_child(gf_cell)
+		row_container.add_child(ga_cell)
+		row_container.add_child(diff_cell)
+		
+		# Выделяем команду игрока желтым цветом
+		if is_player_team:
+			row_container.modulate = Color(1, 1, 0, 1.0)  # Желтый цвет
+		
+		# Добавляем строку в таблицу
+		table_rows_container.add_child(row_container)
+
+func _truncate_team_name(name: String) -> String:
+	# Усекаем длинные названия команд до 12 символов
+	if name.length() > 12:
+		return name.substr(0, 10) + "..."
+	return name
+
+func _render_calendar() -> void:
+	if not top_rounds_container or not bottom_rounds_container:
+		return
+		
+	# Очищаем контейнеры
+	for child in top_rounds_container.get_children():
+		child.queue_free()
+	for child in bottom_rounds_container.get_children():
+		child.queue_free()
 	
-	# Создаем контейнер для нижних 3 туров
-	var bottom_container = HBoxContainer.new()
-	bottom_container.custom_minimum_size = Vector2(0, 250)
-	bottom_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bottom_container.add_theme_constant_override("separation", 15)  # Увеличиваем отступ между панелями
-	
-	# Разбиваем турнир на 6 туров (3 вверху, 3 внизу)
-	var total_rounds = Score.rounds.size()
-	var rounds_per_row = 3
+	var total_rounds : int = Score.rounds.size()
+	var rounds_per_row : int = 3
 	
 	for round_index in range(total_rounds):
 		# Создаем панель для тура
 		var round_panel = Panel.new()
-		round_panel.custom_minimum_size = Vector2(120, 220)  # Увеличиваем размеры панели
+		round_panel.custom_minimum_size = Vector2(150, 250)
 		round_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		round_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		
-		# Подсвечиваем текущий тур жёлтым цветом (непрозрачный)
+		# Подсвечиваем текущий тур желтым цветом
 		if round_index == Score.current_round:
-			round_panel.modulate = Color(1, 1, 0, 1.0)  # Жёлтый фон без прозрачности
+			round_panel.modulate = Color(1, 1, 0, 1.0)  # Желтый фон
 		else:
-			round_panel.modulate = Color(0.8, 0.8, 0.8, 1.0)  # Светло-серый фон без прозрачности
+			round_panel.modulate = Color(0.8, 0.8, 0.8, 1.0)  # Светло-серый фон
 		
-		# Создаем контейнер для содержимого тура
-		var round_container = VBoxContainer.new()
-		round_container.custom_minimum_size = Vector2(0, 220)
-		round_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		round_container.add_theme_constant_override("separation", 5)  # Отступ между элементами
+		# Создаем основной контейнер для панели с центрированием
+		var panel_container = CenterContainer.new()
+		panel_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		panel_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		
+		# Создаем вертикальный контейнер для содержимого
+		var content_container = VBoxContainer.new()
+		content_container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		content_container.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		content_container.add_theme_constant_override("separation", 8)
+		content_container.alignment = BoxContainer.ALIGNMENT_CENTER
 		
 		# Заголовок тура
 		var round_header = Label.new()
-		round_header.text = "Тур %d" % (round_index + 1)
+		round_header.text = "ТУР %d" % (round_index + 1)
 		round_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		round_header.add_theme_font_size_override("font_size", 14)
-		round_header.add_theme_color_override("font_color", Color.BLACK)
-		round_container.add_child(round_header)
+		round_header.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		round_header.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
+		round_header.add_theme_font_size_override("font_size", 16)
+		round_header.add_theme_color_override("font_color", Color.WHITE)
+		round_header.custom_minimum_size = Vector2(0, 30)
+		content_container.add_child(round_header)
+		
+		# Разделитель
+		var separator = HSeparator.new()
+		separator.custom_minimum_size = Vector2(100, 2)
+		content_container.add_child(separator)
 		
 		# Матчи тура
-		var round_idxs = Score.rounds[round_index]
-		for idx in round_idxs:
-			var m = Score.matches[idx] as Dictionary
-			var home = String(m["home"])
-			var away = String(m["away"])
-			var score_text = String(m["score"])
-			var match_label = Label.new()
-			match_label.text = "%s — %s\n%s" % [home, away, score_text]
-			match_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			match_label.add_theme_font_size_override("font_size", 10)
-			match_label.add_theme_color_override("font_color", Color.BLACK)
-			round_container.add_child(match_label)
+		var round_matches = Score.rounds[round_index]
+		for match_idx in round_matches:
+			var match_data : Dictionary = Score.matches[match_idx] as Dictionary
+			var home_team : String = String(match_data["home"])
+			var away_team : String = String(match_data["away"])
+			var score_text : String = String(match_data["score"])
+			var is_played : bool = bool(match_data["played"])
+			
+			# Создаем контейнер для матча
+			var match_container = VBoxContainer.new()
+			match_container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			match_container.add_theme_constant_override("separation", 4)
+			match_container.alignment = BoxContainer.ALIGNMENT_CENTER
+			
+			# Команды
+			var teams_label = Label.new()
+			teams_label.text = "%s\nvs\n%s" % [_truncate_team_name(home_team), _truncate_team_name(away_team)]
+			teams_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			teams_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			teams_label.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
+			teams_label.add_theme_font_size_override("font_size", 12)
+			teams_label.add_theme_color_override("font_color", Color.WHITE)
+			teams_label.custom_minimum_size = Vector2(0, 50)
+			teams_label.clip_contents = true
+			match_container.add_child(teams_label)
+			
+			# Счет
+			var score_label = Label.new()
+			if is_played:
+				score_label.text = score_text
+				score_label.add_theme_color_override("font_color", Color.GREEN)
+			else:
+				score_label.text = "— : —"
+				score_label.add_theme_color_override("font_color", Color.LIGHT_GRAY)
+			score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			score_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			score_label.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
+			score_label.add_theme_font_size_override("font_size", 14)
+			score_label.custom_minimum_size = Vector2(0, 25)
+			match_container.add_child(score_label)
+			
+			content_container.add_child(match_container)
 		
-		# Добавляем контейнер в панель
-		round_panel.add_child(round_container)
+		panel_container.add_child(content_container)
+		round_panel.add_child(panel_container)
 		
-		# Добавляем панель в соответствующий контейнер (верхний или нижний)
+		# Добавляем панель в соответствующий контейнер
 		if round_index < rounds_per_row:
-			top_container.add_child(round_panel)
+			top_rounds_container.add_child(round_panel)
 		else:
-			bottom_container.add_child(round_panel)
-	
-	# Добавляем оба контейнера в основной
-	main_container.add_child(top_container)
-	main_container.add_child(bottom_container)
-	
-	# Добавляем основной контейнер в список
-	matches_list.add_child(main_container)
-
-func _render_table() -> void:
-	if not rows_container:
-		return
-		
-	for child in rows_container.get_children():
-		child.queue_free()
-	
-	# Заголовки таблицы
-	var headers : Array = ["Команда", "Очки", "Забито", "Пропущено", "Разница"]
-	for h in headers:
-		var hl : Label = Label.new()
-		hl.text = String(h)
-		hl.add_theme_font_size_override("font_size", 12)
-		hl.add_theme_color_override("font_color", Color.BLACK)
-		hl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		rows_container.add_child(hl)
-	
-	# Данные команд
-	var sorted : Array = Score.teams.duplicate()
-	sorted.sort_custom(_compare_teams)
-	for t in sorted:
-		@warning_ignore("shadowed_variable_base_class")
-		var name : String = String(t["name"])
-		var points : int = int(t["points"])
-		var gf : int = int(t["goals_for"])
-		var ga : int = int(t["goals_against"])
-		var diff : int = gf - ga
-		var row : Array = [name, str(points), str(gf), str(ga), str(diff)]
-		for v in row:
-			var cell : Label = Label.new()
-			cell.text = v
-			cell.add_theme_font_size_override("font_size", 10)
-			cell.add_theme_color_override("font_color", Color.BLACK)
-			cell.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			rows_container.add_child(cell)
+			bottom_rounds_container.add_child(round_panel)
 
 func _compare_teams(a: Dictionary, b: Dictionary) -> bool:
 	var pa : int = int(a["points"])

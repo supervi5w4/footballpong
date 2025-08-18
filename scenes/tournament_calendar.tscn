@@ -6,53 +6,47 @@
 
 [node name="TournamentCalendar" type="Control"]
 layout_mode = 3
-anchors_preset = 0
-size_flags_horizontal = 4
-size_flags_vertical = 4
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_ke7y2")
 
 [node name="Bg" type="TextureRect" parent="."]
-layout_mode = 0
-offset_right = 1536.0
-offset_bottom = 1024.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 scale = Vector2(1.3, 1.3)
 texture = ExtResource("2_ejpit")
 
-[node name="Label" type="Label" parent="."]
-layout_direction = 2
+[node name="TitleContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = 767.0
-offset_top = 310.0
-offset_right = 1039.0
-offset_bottom = 326.0
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 20.0
+offset_bottom = 80.0
 grow_horizontal = 2
-grow_vertical = 2
-theme_override_fonts/font = ExtResource("2_v305x")
-theme_override_font_sizes/font_size = 22
-text = "Календарь турнира"
 
-[node name="RoundLabel" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = 767.0
-offset_top = 340.0
-offset_right = 1039.0
-offset_bottom = 366.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="TitleLabel" type="Label" parent="TitleContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_v305x")
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 28
+text = "ТУРНИРНАЯ ТАБЛИЦА"
+horizontal_alignment = 1
+
+[node name="RoundLabel" type="Label" parent="TitleContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_v305x")
+theme_override_font_sizes/font_size = 18
 text = "Тур 1 из 6"
+horizontal_alignment = 1
 
 [node name="MainContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -61,21 +55,34 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = 100.0
-offset_top = 380.0
-offset_right = 1436.0
-offset_bottom = 780.0
+offset_left = -650.0
+offset_top = -350.0
+offset_right = 650.0
+offset_bottom = 350.0
 grow_horizontal = 2
 grow_vertical = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+theme_override_constants/separation = 40
 
-[node name="TablePanel" type="Panel" parent="MainContainer"]
+[node name="TableSection" type="VBoxContainer" parent="MainContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="TableTitle" type="Label" parent="MainContainer/TableSection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_v305x")
+theme_override_font_sizes/font_size = 16
+text = "ТАБЛИЦА КОМАНД"
+horizontal_alignment = 1
+
+[node name="TablePanel" type="Panel" parent="MainContainer/TableSection"]
+custom_minimum_size = Vector2(0, 600)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="TableScrollContainer" type="ScrollContainer" parent="MainContainer/TablePanel"]
+[node name="TableContainer" type="VBoxContainer" parent="MainContainer/TableSection/TablePanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -87,13 +94,98 @@ offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="RowsContainer" type="GridContainer" parent="MainContainer/TablePanel/TableScrollContainer"]
+[node name="TableHeader" type="HBoxContainer" parent="MainContainer/TableSection/TablePanel/TableContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="TeamHeader" type="Label" parent="MainContainer/TableSection/TablePanel/TableContainer/TableHeader"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_v305x")
+theme_override_font_sizes/font_size = 14
+text = "КОМАНДА"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PointsHeader" type="Label" parent="MainContainer/TableSection/TablePanel/TableContainer/TableHeader"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_v305x")
+theme_override_font_sizes/font_size = 14
+text = "ОЧКИ"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GFHeader" type="Label" parent="MainContainer/TableSection/TablePanel/TableContainer/TableHeader"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_v305x")
+theme_override_font_sizes/font_size = 14
+text = "ЗАБИТО"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GAHeader" type="Label" parent="MainContainer/TableSection/TablePanel/TableContainer/TableHeader"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_v305x")
+theme_override_font_sizes/font_size = 14
+text = "ПРОПУЩЕНО"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DiffHeader" type="Label" parent="MainContainer/TableSection/TablePanel/TableContainer/TableHeader"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_v305x")
+theme_override_font_sizes/font_size = 14
+text = "РАЗНИЦА"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TableSeparator" type="HSeparator" parent="MainContainer/TableSection/TablePanel/TableContainer"]
+layout_mode = 2
+
+[node name="TableScrollContainer" type="ScrollContainer" parent="MainContainer/TableSection/TablePanel/TableContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TableRowsContainer" type="VBoxContainer" parent="MainContainer/TableSection/TablePanel/TableContainer/TableScrollContainer"]
 unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="CalendarSection" type="VBoxContainer" parent="MainContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="CalendarTitle" type="Label" parent="MainContainer/CalendarSection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_v305x")
+theme_override_font_sizes/font_size = 16
+text = "КАЛЕНДАРЬ ТУРОВ"
+horizontal_alignment = 1
+
+[node name="CalendarPanel" type="Panel" parent="MainContainer/CalendarSection"]
+custom_minimum_size = Vector2(0, 600)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="MainContainer_CalendarPanel#ScrollContainer" type="ScrollContainer" parent="."]
+[node name="CalendarContainer" type="VBoxContainer" parent="MainContainer/CalendarSection/CalendarPanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -104,45 +196,48 @@ offset_right = -10.0
 offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 2
-
-[node name="MainContainer_CalendarPanel_ScrollContainer#MatchesList" type="VBoxContainer" parent="."]
-unique_name_in_owner = true
-layout_direction = 2
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+theme_override_constants/separation = 20
 alignment = 1
 
-[node name="PlayNextBtn" type="Button" parent="."]
+[node name="TopRoundsContainer" type="HBoxContainer" parent="MainContainer/CalendarSection/CalendarPanel/CalendarContainer"]
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = 400.0
-offset_top = 820.0
-offset_right = 744.0
-offset_bottom = 851.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_fonts/font = ExtResource("2_v305x")
-text = "Играть следующий матч"
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 15
+alignment = 1
 
-[node name="SimulateBtn" type="Button" parent="."]
+[node name="BottomRoundsContainer" type="HBoxContainer" parent="MainContainer/CalendarSection/CalendarPanel/CalendarContainer"]
 unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 15
+alignment = 1
+
+[node name="ButtonsContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = 406.0
-offset_top = 860.0
-offset_right = 686.0
-offset_bottom = 884.0
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -120.0
 grow_horizontal = 2
-grow_vertical = 2
+grow_vertical = 0
+theme_override_constants/separation = 10
+
+[node name="PlayNextBtn" type="Button" parent="ButtonsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_v305x")
-text = "Симулировать матч"
+theme_override_font_sizes/font_size = 14
+text = "ИГРАТЬ СЛЕДУЮЩИЙ МАТЧ"
+
+[node name="SimulateBtn" type="Button" parent="ButtonsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_v305x")
+theme_override_font_sizes/font_size = 14
+text = "СИМУЛИРОВАТЬ МАТЧ"
