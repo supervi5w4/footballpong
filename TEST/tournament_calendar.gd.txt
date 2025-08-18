@@ -1,0 +1,187 @@
+# scenes/tournament_calendar.gd
+extends Control
+
+@onready var round_label    : Label         = %RoundLabel
+@onready var table_rows     : VBoxContainer = %RowsContainer
+@onready var rounds_grid    : GridContainer = %RoundsContainer
+@onready var play_next_btn  : Button        = %PlayNextBtn
+@onready var simulate_btn   : Button        = %SimulateBtn
+
+const HEADER : Array = ["Команда", "Очки", "Забито", "Пропущено", "Разница"]
+
+func _ready() -> void:
+    play_next_btn.pressed.connect(_on_play_next_pressed)
+    simulate_btn.pressed.connect(_on_simulate_pressed)
+    _update_round_info()
+
+func _notification(what: int) -> void:
+    if what == NOTIFICATION_ENTER_TREE:
+        _update_round_info()
+
+func _update_round_info() -> void:
+    round_label.text = "Тур %d из %d" % [Score.current_round + 1, Score.rounds.size()]
+    _render_table()
+    _render_calendar()
+
+# ----------------------- TABLE -----------------------
+func _render_table() -> void:
+    for c in table_rows.get_children():
+        c.queue_free()
+
+    _add_table_row(HEADER, true)
+
+    var sorted := Score.teams.duplicate()
+    sorted.sort_custom(_compare_teams)
+    for t in sorted:
+        var row := [
+            String(t["name"]),
+            str(t["points"]),
+            str(t["goals_for"]),
+            str(t["goals_against"]),
+            str(int(t["goals_for"]) - int(t["goals_against"]))
+        ]
+        _add_table_row(row, false, String(t["name"]) == Score.player_team_name)
+
+func _add_table_row(values: Array, header: bool, highlight: bool=false) -> void:
+    var row_panel := PanelContainer.new()
+    row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    if highlight:
+        row_panel.add_theme_color_override("panel", Color(1, 1, 0, 0.4))
+
+    var line := HBoxContainer.new()
+    line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    line.theme_override_constants.separation = 4
+
+    for v in values:
+        var lbl := Label.new()
+        lbl.text = v
+        lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        lbl.add_theme_font_size_override("font_size", header ? 18 : 16)
+        line.add_child(lbl)
+
+    row_panel.add_child(line)
+    table_rows.add_child(row_panel)
+
+# ----------------------- CALENDAR -----------------------
+func _render_calendar() -> void:
+    for c in rounds_grid.get_children():
+        c.queue_free()
+
+    rounds_grid.columns = 3
+    var total := Score.rounds.size()
+
+    for round_idx in range(total):
+        var panel := PanelContainer.new()
+        panel.custom_minimum_size = Vector2(220, 150)
+        if round_idx == Score.current_round:
+            panel.add_theme_color_override("panel", Color(1, 1, 0, 0.4))
+        else:
+            panel.add_theme_color_override("panel", Color(0, 0, 0, 0.1))
+
+        var box := VBoxContainer.new()
+        box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        box.theme_override_constants.separation = 2
+
+        var title := Label.new()
+        title.text = "Тур %d" % (round_idx + 1)
+        title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        title.add_theme_font_size_override("font_size", 16)
+        box.add_child(title)
+
+        var r := Score.rounds[round_idx]
+        for idx in r:
+            var m := Score.matches[idx]
+            var line := Label.new()
+            line.text = "%s %s %s" % [String(m["home"]), String(m["score"]), String(m["away"])]
+            line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+            line.add_theme_font_size_override("font_size", 14)
+            box.add_child(line)
+
+        panel.add_child(box)
+        rounds_grid.add_child(panel)
+
+# ----------------------- HELPERS -----------------------
+func _compare_teams(a: Dictionary, b: Dictionary) -> bool:
+    var pa := int(a["points"])
+    var pb := int(b["points"])
+    if pa == pb:
+        var da := int(a["goals_for"]) - int(a["goals_against"])
+        var db := int(b["goals_for"]) - int(b["goals_against"])
+        if da == db:
+            return int(a["goals_for"]) > int(b["goals_for"])
+        return da > db
+    return pa > pb
+
+# ----------------------- BUTTON LOGIC -----------------------
+func _on_play_next_pressed() -> void:
+    var player := Score.player_team_name
+    var round_idxs := Score.rounds[Score.current_round]
+    for idx in round_idxs:
+        var m := Score.matches[idx]
+        if not bool(m["played"]) and (String(m["home"]) == player or String(m["away"]) == player):
+            Score.current_match = idx
+            get_tree().change_scene_to_file("res://scenes/game.tscn")
+            return
+    _check_advance_round()
+
+func _on_simulate_pressed() -> void:
+    var player := Score.player_team_name
+    var round_idxs := Score.rounds[Score.current_round]
+    for idx in round_idxs:
+        var m := Score.matches[idx]
+        if not bool(m["played"]) and (String(m["home"]) == player or String(m["away"]) == player):
+            Score.current_match = idx
+            var rng := RandomNumberGenerator.new()
+            rng.randomize()
+            var home_goals := rng.randi_range(0, 4)
+            var away_goals := rng.randi_range(0, 4)
+
+            var goals_left : int
+            var goals_right : int
+            if String(m["home"]) == player:
+                goals_left = home_goals
+                goals_right = away_goals
+            else:
+                goals_left = away_goals
+                goals_right = home_goals
+
+            m["score"] = "%d:%d" % [home_goals, away_goals]
+            m["played"] = true
+
+            var pt := Score.get_team_dict(player)
+            var ot_name := String(m["home"]) == player ? String(m["away"]) : String(m["home"])
+            var ot := Score.get_team_dict(ot_name)
+
+            pt["goals_for"]     = int(pt["goals_for"])     + goals_left
+            pt["goals_against"] = int(pt["goals_against"]) + goals_right
+            ot["goals_for"]     = int(ot["goals_for"])     + goals_right
+            ot["goals_against"] = int(ot["goals_against"]) + goals_left
+
+            var pl := int(pt["points"])
+            var ol := int(ot["points"])
+            if goals_left > goals_right:
+                pt["points"] = pl + 3
+            elif goals_left < goals_right:
+                ot["points"] = ol + 3
+            else:
+                pt["points"] = pl + 1
+                ot["points"] = ol + 1
+            break
+    Score.simulate_bot_matches()
+    _check_advance_round()
+
+func _check_advance_round() -> void:
+    var all_played := true
+    var round_idxs := Score.rounds[Score.current_round]
+    for idx in round_idxs:
+        if not Score.matches[idx]["played"]:
+            all_played = false
+            break
+
+    if all_played:
+        Score.current_round += 1
+        if Score.current_round >= Score.rounds.size():
+            get_tree().change_scene_to_file("res://scenes/final_table.tscn")
+            return
+    _update_round_info()
