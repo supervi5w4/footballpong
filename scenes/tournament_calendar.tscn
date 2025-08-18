@@ -36,21 +36,76 @@ theme_override_fonts/font = ExtResource("2_v305x")
 theme_override_font_sizes/font_size = 22
 text = "Календарь турнира"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="."]
+[node name="RoundLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 767.0
+offset_top = 340.0
+offset_right = 1039.0
+offset_bottom = 366.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("2_v305x")
+theme_override_font_sizes/font_size = 16
+text = "Тур 1 из 6"
+
+[node name="MainContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = 678.0
-offset_top = 251.0
-offset_right = 1028.0
-offset_bottom = 651.0
+offset_left = 100.0
+offset_top = 380.0
+offset_right = 1436.0
+offset_bottom = 780.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TablePanel" type="Panel" parent="MainContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TableScrollContainer" type="ScrollContainer" parent="MainContainer/TablePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MatchesList" type="VBoxContainer" parent="ScrollContainer"]
+[node name="RowsContainer" type="GridContainer" parent="MainContainer/TablePanel/TableScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MainContainer_CalendarPanel#ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainContainer_CalendarPanel_ScrollContainer#MatchesList" type="VBoxContainer" parent="."]
 unique_name_in_owner = true
 layout_direction = 2
 layout_mode = 2
@@ -66,10 +121,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = 800.0
-offset_top = 711.0
-offset_right = 1144.0
-offset_bottom = 742.0
+offset_left = 400.0
+offset_top = 820.0
+offset_right = 744.0
+offset_bottom = 851.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_fonts/font = ExtResource("2_v305x")
@@ -77,45 +132,17 @@ text = "Играть следующий матч"
 
 [node name="SimulateBtn" type="Button" parent="."]
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = 806.0
-offset_top = 748.0
-offset_right = 1086.0
-offset_bottom = 772.0
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 406.0
+offset_top = 860.0
+offset_right = 686.0
+offset_bottom = 884.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_fonts/font = ExtResource("2_v305x")
 text = "Симулировать матч"
-
-[node name="TabContainer" type="Control" parent="."]
-anchors_preset = 0
-offset_left = -168.0
-offset_top = 251.0
-offset_right = -128.0
-offset_bottom = 291.0
-
-[node name="CalendarTab" type="VBoxContainer" parent="TabContainer"]
-layout_mode = 0
-offset_left = 940.0
-offset_top = 338.0
-offset_right = 980.0
-offset_bottom = 378.0
-tooltip_text = "Календарь"
-
-[node name="TableTab" type="VBoxContainer" parent="TabContainer"]
-layout_mode = 0
-offset_left = 1105.0
-offset_top = 143.0
-offset_right = 1145.0
-offset_bottom = 183.0
-tooltip_text = "Таблица"
-
-[node name="RowsContainer" type="GridContainer" parent="TabContainer/TableTab"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="RoundLabel" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 705.0
-offset_top = 390.0
-offset_right = 745.0
-offset_bottom = 413.0

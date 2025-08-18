@@ -26,12 +26,15 @@ func _on_body_entered(body: Node) -> void:
 	if not (body is RigidBody2D and body.is_in_group("ball")):
 		return
 
-	# Обновляем счёт (игрок всегда отображается слева)
-	if _score:
-		if is_right_goal == _score.player_is_home:
-			_score.left += 1  # гол игрока
-		else:
-			_score.right += 1  # гол соперника
+	# Определяем: где ворота игрока?
+	var player_goal_is_right := not _score.player_on_left
+
+	if is_right_goal == player_goal_is_right:
+		# мяч влетел в ворота игрока → очко сопернику
+		_score.right += 1
+	else:
+		# мяч влетел в ворота бота → очко игроку
+		_score.left += 1
 
 	# Воспроизводим звук гола
 	if _sound:

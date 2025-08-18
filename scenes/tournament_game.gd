@@ -24,8 +24,17 @@ const SKILL_MAX := 0.99
 
 func _ready() -> void:
 	# --- Сброс счёта ---
-	Score.left = 0
-	Score.right = 0
+	Score.reset()
+
+	# --- Определяем позицию игрока на поле ---
+	var p_paddle := game_node.get_node_or_null("PlayerPaddle")
+	var a_paddle := game_node.get_node_or_null("AiPaddle")
+
+	if p_paddle and a_paddle:
+		# если игрок левее бота по оси X → он слева
+		Score.player_on_left = p_paddle.global_position.x < a_paddle.global_position.x
+	else:
+		Score.player_on_left = true  # запасной вариант
 
 	# --- Инициализация таймера матча ---
 	if time_scoreboard:
@@ -99,8 +108,9 @@ func _apply_ai_tuning() -> void:
 func _on_score_changed(left: int, right: int) -> void:
 	if ai == null:
 		return
-	var player_goals: int = left if Score.player_is_home else right
-	var ai_goals: int = right if Score.player_is_home else left
+	# Используем player_on_left для определения голов игрока и ИИ
+	var player_goals: int = left if Score.player_on_left else right
+	var ai_goals: int = right if Score.player_on_left else left
 	var diff: int = player_goals - ai_goals
 	ai.skill = clamp(base_skill + diff * 0.1, SKILL_MIN, SKILL_MAX)
 	_apply_ai_tuning()
@@ -209,8 +219,9 @@ func _finalize_match() -> void:
 		var away: String = String(m["away"])
 		var player_is_home: bool = Score.player_is_home
 
-		var goals_player: int = Score.left
-		var goals_opponent: int = Score.right
+		# Используем player_on_left для определения голов игрока и ИИ
+		var goals_player: int = Score.left if Score.player_on_left else Score.right
+		var goals_opponent: int = Score.right if Score.player_on_left else Score.left
 
 		var goals_home: int
 		var goals_away: int
