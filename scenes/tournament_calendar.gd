@@ -160,21 +160,23 @@ func _render_calendar() -> void:
 		panel_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		
 		# Создаем вертикальный контейнер для содержимого
-		var content_container = VBoxContainer.new()
-		content_container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		content_container.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		content_container.add_theme_constant_override("separation", 8)
-		content_container.alignment = BoxContainer.ALIGNMENT_CENTER
+                var content_container = VBoxContainer.new()
+                content_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+                content_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+                content_container.alignment = BoxContainer.ALIGNMENT_CENTER
+                content_container.add_theme_constant_override("separation", 8)
 		
 		# Заголовок тура
 		var round_header = Label.new()
-		round_header.text = "ТУР %d" % (round_index + 1)
-		round_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		round_header.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		round_header.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
-		round_header.add_theme_font_size_override("font_size", 16)
-		round_header.add_theme_color_override("font_color", Color.WHITE)
-		round_header.custom_minimum_size = Vector2(0, 30)
+                round_header.text = "ТУР %d" % (round_index + 1)
+                round_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+                round_header.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+                round_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+                round_header.size_flags_vertical = Control.SIZE_EXPAND_FILL
+                round_header.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
+                round_header.add_theme_font_size_override("font_size", 16)
+                round_header.add_theme_color_override("font_color", Color.WHITE)
+                round_header.custom_minimum_size = Vector2(0, 30)
 		content_container.add_child(round_header)
 		
 		# Разделитель
@@ -192,21 +194,24 @@ func _render_calendar() -> void:
 			var is_played : bool = bool(match_data["played"])
 			
 			# Создаем контейнер для матча
-			var match_container = VBoxContainer.new()
-			match_container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-			match_container.add_theme_constant_override("separation", 4)
-			match_container.alignment = BoxContainer.ALIGNMENT_CENTER
+                        var match_container = VBoxContainer.new()
+                        match_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+                        match_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+                        match_container.alignment = BoxContainer.ALIGNMENT_CENTER
+                        match_container.add_theme_constant_override("separation", 4)
 			
 			# Команды
 			var teams_label = Label.new()
-			teams_label.text = "%s\nvs\n%s" % [_truncate_team_name(home_team), _truncate_team_name(away_team)]
-			teams_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			teams_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			teams_label.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
-			teams_label.add_theme_font_size_override("font_size", 12)
-			teams_label.add_theme_color_override("font_color", Color.WHITE)
-			teams_label.custom_minimum_size = Vector2(0, 50)
-			teams_label.clip_contents = true
+                        teams_label.text = "%s\nvs\n%s" % [_truncate_team_name(home_team), _truncate_team_name(away_team)]
+                        teams_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+                        teams_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+                        teams_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+                        teams_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+                        teams_label.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
+                        teams_label.add_theme_font_size_override("font_size", 12)
+                        teams_label.add_theme_color_override("font_color", Color.WHITE)
+                        teams_label.custom_minimum_size = Vector2(0, 50)
+                        teams_label.clip_contents = true
 			match_container.add_child(teams_label)
 			
 			# Счет
@@ -217,11 +222,13 @@ func _render_calendar() -> void:
 			else:
 				score_label.text = "— : —"
 				score_label.add_theme_color_override("font_color", Color.LIGHT_GRAY)
-			score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			score_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			score_label.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
-			score_label.add_theme_font_size_override("font_size", 14)
-			score_label.custom_minimum_size = Vector2(0, 25)
+                        score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+                        score_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+                        score_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+                        score_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+                        score_label.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
+                        score_label.add_theme_font_size_override("font_size", 14)
+                        score_label.custom_minimum_size = Vector2(0, 25)
 			match_container.add_child(score_label)
 			
 			content_container.add_child(match_container)
