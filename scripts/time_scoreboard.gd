@@ -9,6 +9,9 @@
 extends Control
 class_name TimeScoreboard
 
+@export var controller_path: NodePath
+@onready var controller: Node = get_node_or_null(controller_path)
+
 @onready var time_label: Label = $TimeLabel
 @onready var period_label: Label = $PeriodLabel
 
@@ -28,9 +31,27 @@ func _ready() -> void:
 	_update_display()
 	print("TimeScoreboard: Инициализирован")
 
+func _call_start_match() -> void:
+	"""Вызывает start_match() или start_next_half() у контроллера, если он существует"""
+	if controller:
+		if controller.has_method("start_match"):
+			controller.start_match()
+		elif controller.has_method("start_next_half"):
+			controller.start_next_half()
+		else:
+			push_warning("TimeScoreboard: controller не имеет методов start_match или start_next_half")
+	else:
+		push_warning("TimeScoreboard: controller не найден по пути %s" % controller_path)
+
 func start_match() -> void:
 	"""Запуск матча"""
 	print("TimeScoreboard: Запуск матча")
+	_call_start_match()
+	match_timer.start_match()
+
+func _start_match_timer_only() -> void:
+	"""Запуск только таймера матча (без вызова контроллера)"""
+	print("TimeScoreboard: Запуск только таймера матча")
 	match_timer.start_match()
 
 func pause_match() -> void:
