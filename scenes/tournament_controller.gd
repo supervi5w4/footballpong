@@ -34,6 +34,7 @@ func _ready() -> void:
 
 	# --- Инициализация таймера матча ---
 	if time_scoreboard:
+		await time_scoreboard.ready
 		match_timer = time_scoreboard.get_match_timer()
 		if match_timer:
 			match_timer.period_changed.connect(_on_period_changed)
@@ -72,7 +73,11 @@ func _ready() -> void:
 		Score.score_changed.connect(_on_score_changed)
 
 	current_half = 0
-	_start_next_half()
+	# Запускаем матч после завершения _ready всех узлов, чтобы
+	# TimeScoreboard успел создать свой MatchTimer. Иначе при
+	# прямом вызове _start_next_half() match_timer ещё не
+	# инициализирован и игра вылетает при старте матча.
+	call_deferred("_start_next_half")
 
 func _exit_tree() -> void:
 	# чисто отключимся от сигналов
@@ -121,7 +126,7 @@ func _on_period_changed(period: int) -> void:
 func _on_first_half_ended() -> void:
 	"""Обработчик окончания первого тайма"""
 	print("Турнир: Первый тайм завершен")
-	_on_half_finished()
+	await _on_half_finished()
 
 func _on_match_ended() -> void:
 	"""Обработчик окончания матча"""
