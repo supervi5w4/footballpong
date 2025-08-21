@@ -40,6 +40,10 @@ func _notification(what: int) -> void:
 
 func _update_round_info() -> void:
 	var total_rounds : int = Score.rounds.size()
+	print("Календарь: Обновляем информацию о раунде:")
+	print("  - current_round: ", Score.current_round)
+	print("  - total_rounds: ", total_rounds)
+	
 	if round_label:
 		round_label.text = "Тур %d из %d" % [Score.current_round + 1, total_rounds]
 	if table_rows_container:
@@ -242,12 +246,17 @@ func _compare_teams(a: Dictionary, b: Dictionary) -> bool:
 func _on_play_next_pressed() -> void:
 	var player : String = Score.player_team_name
 	var round_idxs : Array = Score.rounds[Score.current_round]
+	print("Календарь: Ищем следующий матч игрока в раунде ", Score.current_round)
+	
 	for idx in round_idxs:
 		var m : Dictionary = Score.matches[idx]
 		if not bool(m["played"]) and (m["home"] == player or m["away"] == player):
+			print("Календарь: Найден матч ", idx, " - ", m["home"], " vs ", m["away"])
 			Score.current_match = idx
 			get_tree().change_scene_to_file("res://scenes/game.tscn")
 			return
+	
+	print("Календарь: Матчи игрока в текущем раунде не найдены, проверяем переход к следующему раунду")
 	_check_advance_round()
 
 func _on_simulate_pressed() -> void:
@@ -293,14 +302,19 @@ func _on_simulate_pressed() -> void:
 func _check_advance_round() -> void:
 	var all_played = true
 	var round_idxs : Array = Score.rounds[Score.current_round]
+	print("Календарь: Проверяем завершение раунда ", Score.current_round)
+	
 	for idx in round_idxs:
 		if not bool(Score.matches[idx]["played"]):
 			all_played = false
+			print("Календарь: Матч ", idx, " еще не сыгран")
 			break
 	
 	if all_played:
+		print("Календарь: Все матчи раунда сыграны, переходим к раунду ", Score.current_round + 1)
 		Score.current_round += 1
 		if Score.current_round >= Score.rounds.size():
+			print("Календарь: Турнир завершен, переходим к финальной таблице")
 			get_tree().change_scene_to_file("res://scenes/final_table.tscn")
 			return
 	

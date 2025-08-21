@@ -14,6 +14,9 @@
 extends Node2D
 class_name Game
 
+# --- Константы ---
+const RETURN_SCENE := "res://scenes/menu.tscn"
+
 # --- Узлы сцены ---
 @onready var ball: RigidBody2D = $Ball
 @onready var player_paddle: CharacterBody2D = $PlayerPaddle
@@ -27,6 +30,9 @@ class_name Game
 var _game_started: bool = false
 
 func _ready() -> void:
+	# Сбрасываем счёт в начале игры
+	Score.reset_score()
+	
 	# Подключаемся к сигналу обновления счёта
 	Score.score_changed.connect(_update_scoreboard)
 	
@@ -101,6 +107,11 @@ func get_match_timer() -> Node:
 		return time_scoreboard.get_match_timer()
 	return null
 
+# Возврат в главное меню после быстрого матча
+func _return_to_menu() -> void:
+	await get_tree().create_timer(1.5).timeout
+	get_tree().change_scene_to_file(RETURN_SCENE)
+
 # Обработчик окончания первого тайма
 func _on_first_half_ended() -> void:
 	print("Game: Первый тайм завершен, останавливаем игру")
@@ -157,3 +168,6 @@ func _on_match_ended() -> void:
 	# Скрываем надпись
 	if message_label:
 		message_label.visible = false
+	
+	# Возвращаемся в главное меню
+	_return_to_menu()

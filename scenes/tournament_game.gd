@@ -257,10 +257,41 @@ func _finalize_match() -> void:
 	if tree == null:
 		print("Турнир: get_tree() вернул null, пропускаем смену сцены")
 		return
-		
-	if Score.rounds.is_empty():
+	
+	# Отладочная информация
+	print("Турнир: Проверяем состояние турнира:")
+	print("  - current_round: ", Score.current_round)
+	print("  - rounds.size(): ", Score.rounds.size())
+	print("  - rounds.is_empty(): ", Score.rounds.is_empty())
+	print("  - current_match: ", Score.current_match)
+	
+	# Проверяем, закончен ли турнир (все раунды сыграны)
+	if Score.current_round >= Score.rounds.size():
+		print("Турнир: Все раунды сыграны, возвращаемся в главное меню")
 		tree.change_scene_to_file("res://scenes/menu.tscn")
 		return
 
+	# Симулируем матчи ботов
 	Score.simulate_bot_matches()
+	
+	# Проверяем, нужно ли переходить к следующему раунду
+	var all_played = true
+	var round_idxs : Array = Score.rounds[Score.current_round]
+	for idx in round_idxs:
+		if not bool(Score.matches[idx]["played"]):
+			all_played = false
+			break
+	
+	if all_played:
+		Score.current_round += 1
+		print("Турнир: Переходим к раунду ", Score.current_round)
+		
+		# Проверяем, закончен ли турнир
+		if Score.current_round >= Score.rounds.size():
+			print("Турнир: Все раунды сыграны, переходим к финальной таблице")
+			tree.change_scene_to_file("res://scenes/final_table.tscn")
+			return
+	
+	# Переходим к календарю турнира
+	print("Турнир: Продолжаем турнир, переходим к календарю")
 	tree.change_scene_to_file("res://scenes/tournament_calendar.tscn")
