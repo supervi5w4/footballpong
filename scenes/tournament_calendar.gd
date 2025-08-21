@@ -248,12 +248,12 @@ func _on_play_next_pressed() -> void:
 	var round_idxs : Array = Score.rounds[Score.current_round]
 	print("Календарь: Ищем следующий матч игрока в раунде ", Score.current_round)
 	
-	for idx in round_idxs:
-		var m : Dictionary = Score.matches[idx]
+	for match_idx in round_idxs:
+		var m : Dictionary = Score.matches[match_idx]
 		if not bool(m["played"]) and (m["home"] == player or m["away"] == player):
-			print("Календарь: Найден матч ", idx, " - ", m["home"], " vs ", m["away"])
-			Score.current_match = idx
-			get_tree().change_scene_to_file("res://scenes/game.tscn")
+			print("Календарь: Найден матч ", match_idx, " - ", m["home"], " vs ", m["away"])
+			Score.current_match = match_idx
+			get_tree().change_scene_to_file("res://scenes/tournament_game.tscn")
 			return
 	
 	print("Календарь: Матчи игрока в текущем раунде не найдены, проверяем переход к следующему раунду")
@@ -262,10 +262,10 @@ func _on_play_next_pressed() -> void:
 func _on_simulate_pressed() -> void:
 	var player : String = Score.player_team_name
 	var round_idxs : Array = Score.rounds[Score.current_round]
-	for idx in round_idxs:
-		var m : Dictionary = Score.matches[idx]
+	for match_idx in round_idxs:
+		var m : Dictionary = Score.matches[match_idx]
 		if not bool(m["played"]) and (m["home"] == player or m["away"] == player):
-			Score.current_match = idx
+			Score.current_match = match_idx
 			
 			var rng = RandomNumberGenerator.new()
 			rng.randomize()
@@ -304,10 +304,10 @@ func _check_advance_round() -> void:
 	var round_idxs : Array = Score.rounds[Score.current_round]
 	print("Календарь: Проверяем завершение раунда ", Score.current_round)
 	
-	for idx in round_idxs:
-		if not bool(Score.matches[idx]["played"]):
+	for round_idx in round_idxs:
+		if not bool(Score.matches[round_idx]["played"]):
 			all_played = false
-			print("Календарь: Матч ", idx, " еще не сыгран")
+			print("Календарь: Матч ", round_idx, " еще не сыгран")
 			break
 	
 	if all_played:

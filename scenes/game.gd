@@ -74,6 +74,11 @@ func _update_scoreboard(_left: int = 0, _right: int = 0) -> void:
 		score_left_label.text = str(Score.left)
 		score_right_label.text = str(Score.right)
 
+# Запуск матча
+func start_match() -> void:
+	"""Публичный интерфейс для запуска матча"""
+	reset_round()
+
 # Сброс раунда: позиции мяча и ракеток
 func reset_round() -> void:
 	if ball:

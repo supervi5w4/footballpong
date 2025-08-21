@@ -175,6 +175,7 @@ offset_top = -23.0
 offset_right = 1378.0
 offset_bottom = 1001.0
 scale = Vector2(0.738959, 0.503504)
+controller_path = NodePath("../..")
 
 [node name="TextureRect" type="TextureRect" parent="UI"]
 offset_left = 1712.0
