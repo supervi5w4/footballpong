@@ -4,6 +4,17 @@
 # ------------------------------------------------------------
 extends Control
 
+# ---------- Константы для настройки ----------
+const FONT_SIZE : int = 16
+const PADDING : int = 20
+const MIN_PANEL_SIZE : Vector2 = Vector2(190, 250)
+const MAX_TEAMS_FOR_LAZY_RENDER : int = 16
+
+# ---------- Цвета для топ-3 ----------
+const GOLD_COLOR : Color = Color(1.0, 0.84, 0.0, 1.0)    # #FFD700
+const SILVER_COLOR : Color = Color(0.75, 0.75, 0.75, 1.0) # #C0C0C0
+const BRONZE_COLOR : Color = Color(0.8, 0.5, 0.2, 1.0)    # #CD7F32
+
 @onready var round_label           : Label         = %RoundLabel
 @onready var table_rows_container  : VBoxContainer = %TableRowsContainer
 @onready var top_rounds_container  : HBoxContainer = %TopRoundsContainer
@@ -12,6 +23,10 @@ extends Control
 @onready var simulate_btn          : Button        = %SimulateBtn
 
 func _ready() -> void:
+	# Настройка шрифта для всего экрана
+	add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
+	add_theme_font_size_override("font_size", FONT_SIZE)
+	
 	play_next_btn.pressed.connect(_on_play_next_pressed)
 	simulate_btn.pressed.connect(_on_simulate_pressed)
 	_update_round_info()
@@ -62,12 +77,21 @@ func _render_table() -> void:
 		
 		var is_player_team : bool = (team_name == Score.player_team_name)
 		
+		# Определяем цвет для топ-3
+		var text_color : Color = Color.WHITE
+		if i == 0:
+			text_color = GOLD_COLOR
+		elif i == 1:
+			text_color = SILVER_COLOR
+		elif i == 2:
+			text_color = BRONZE_COLOR
+		
 		# Ячейки
-		var name_cell = _make_label(_truncate_team_name(team_name), 200, 14)
-		var points_cell = _make_label(str(points), 80, 14)
-		var gf_cell = _make_label(str(goals_for), 80, 14)
-		var ga_cell = _make_label(str(goals_against), 80, 14)
-		var diff_cell = _make_label(str(diff), 80, 14)
+		var name_cell = _make_label(_truncate_team_name(team_name), 200, 14, text_color)
+		var points_cell = _make_label(str(points), 80, 14, text_color)
+		var gf_cell = _make_label(str(goals_for), 80, 14, text_color)
+		var ga_cell = _make_label(str(goals_against), 80, 14, text_color)
+		var diff_cell = _make_label(str(diff), 80, 14, text_color)
 		
 		row_container.add_child(name_cell)
 		row_container.add_child(points_cell)
@@ -80,7 +104,7 @@ func _render_table() -> void:
 		
 		table_rows_container.add_child(row_container)
 
-func _make_label(text: String, width: int, font_size: int) -> Label:
+func _make_label(text: String, width: int, font_size: int, color: Color = Color.WHITE) -> Label:
 	var label = Label.new()
 	label.text = text
 	label.custom_minimum_size = Vector2(width, 0)
@@ -89,7 +113,7 @@ func _make_label(text: String, width: int, font_size: int) -> Label:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
 	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", Color.WHITE)
+	label.add_theme_color_override("font_color", color)
 	label.clip_contents = true
 	return label
 
@@ -125,7 +149,7 @@ func _render_calendar() -> void:
 
 		round_panel.add_theme_stylebox_override("panel", style)
 		
-		round_panel.custom_minimum_size = Vector2(190, 250)
+		round_panel.custom_minimum_size = MIN_PANEL_SIZE
 		
 		round_panel.modulate = (
 			Color(1, 1, 0, 1) if round_index == Score.current_round
