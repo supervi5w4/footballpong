@@ -115,10 +115,8 @@ func _apply_ai_tuning() -> void:
 func _on_score_changed(left: int, right: int) -> void:
 	if ai == null:
 		return
-	# Используем player_on_left для определения голов игрока и ИИ
-	var player_goals: int = left if Score.player_on_left else right
-	var ai_goals: int = right if Score.player_on_left else left
-	var diff: int = player_goals - ai_goals
+	# Параметры left/right уже отражают голы игрока и соперника
+	var diff: int = left - right
 	ai.skill = clamp(base_skill + diff * 0.1, SKILL_MIN, SKILL_MAX)
 	_apply_ai_tuning()
 
