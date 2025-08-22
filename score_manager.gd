@@ -40,6 +40,30 @@ func set_score(l: int, r: int) -> void:
 	_right = r
 	score_changed.emit(_left, _right)
 
+func reset() -> void:
+	"""Сброс турнирных данных"""
+	for t in teams:
+		t["points"] = 0
+		t["goals_for"] = 0
+		t["goals_against"] = 0
+	for m in matches:
+		m["played"] = false
+		m["score"] = "— : —"
+	current_round = 0
+	current_match = -1
+
+func reset_tournament() -> void:
+	"""Сброс турнирных данных"""
+	for t in teams:
+		t["points"] = 0
+		t["goals_for"] = 0
+		t["goals_against"] = 0
+	for m in matches:
+		m["played"] = false
+		m["score"] = "— : —"
+	current_round = 0
+	current_match = -1
+
 # ---------- 2) Турнирные данные ----------
 var ad_shown: bool = false
 var player_team_name: String = ""
@@ -49,6 +73,7 @@ var rounds: Array[Array] = []          # [[match_idx...], ...]
 var current_round: int = 0
 var current_match: int = -1
 var player_is_home: bool = true        # true → игрок хозяин, влияет на отображение счёта
+var player_on_left: bool = true        # true → игрок фактически стоит слева на поле
 
 const BYE := "__BYE__"
 const STRENGTH_MIN := 0.10
