@@ -243,9 +243,9 @@ func _finalize_match() -> void:
 		var away: String = String(m["away"])
 		var player_is_home: bool = Score.player_is_home
 
-		# Используем player_on_left для определения голов игрока и ИИ
-		var goals_player: int = Score.left if Score.player_on_left else Score.right
-		var goals_opponent: int = Score.right if Score.player_on_left else Score.left
+		# Score.left всегда содержит голы игрока, а Score.right — соперника
+		var goals_player: int = Score.left
+		var goals_opponent: int = Score.right
 
 		var goals_home: int
 		var goals_away: int
