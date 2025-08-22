@@ -32,6 +32,7 @@ var _game_started: bool = false
 func _ready() -> void:
 	# Сбрасываем счёт в начале игры
 	Score.reset_score()
+	Score.player_on_left = true  # Игрок начинает слева
 	
 	# Подключаемся к сигналу обновления счёта
 	Score.score_changed.connect(_update_scoreboard)
@@ -132,18 +133,33 @@ func _on_first_half_ended() -> void:
 	_start_second_half()
 
 func _start_second_half() -> void:
-	"""Запуск второго тайма с возвратом мяча в центр"""
+	"""Запуск второго тайма с возвратом мяча в центр и сменой сторон"""
 	print("Game: Запуск второго тайма")
 	
 	# Размораживаем мяч перед сбросом
 	if ball:
 		ball.freeze = false
 	
+	# Меняем стороны: игрок переходит на правую сторону
+	Score.player_on_left = false
+	
+	# Переключаем флаги сторон для ракеток
+	if player_paddle and player_paddle.has_method("set_defends_right_side"):
+		player_paddle.defends_right_side = true
+	if ai_paddle and ai_paddle.has_method("set_defends_right_side"):
+		ai_paddle.defends_right_side = false
+	
+	# Меняем стартовые позиции ракеток местами
+	if player_paddle and ai_paddle:
+		var temp_pos = player_paddle.start_pos
+		player_paddle.start_pos = ai_paddle.start_pos
+		ai_paddle.start_pos = temp_pos
+	
 	# Запускаем второй тайм
 	if time_scoreboard:
 		time_scoreboard.start_second_half()
 	
-	# Только сбрасываем позиции ракеток, НЕ трогаем мяч
+	# Сбрасываем позиции ракеток на новые места
 	if player_paddle and player_paddle.has_method("reset_position"):
 		player_paddle.reset_position()
 
@@ -155,7 +171,7 @@ func _start_second_half() -> void:
 		ball._teleport_to_spawn()
 		ball._serve()
 	
-	print("Game: Второй тайм начался")
+	print("Game: Второй тайм начался, стороны поменялись")
 
 # Обработчик окончания матча
 func _on_match_ended() -> void:

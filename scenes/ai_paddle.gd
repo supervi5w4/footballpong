@@ -85,6 +85,10 @@ func reset_position() -> void:
 	_fake_timer = 0.0
 	_is_first_hit = true
 
+func set_defends_right_side(value: bool) -> void:
+	"""Устанавливает флаг защиты правой стороны поля"""
+	defends_right_side = value
+
 # ---------------- MAIN ----------------
 func _physics_process(delta: float) -> void:
 	_time_to_next_think -= delta

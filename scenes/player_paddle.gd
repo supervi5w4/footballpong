@@ -18,6 +18,7 @@ const Utils: Script = preload("res://scripts/utils.gd")
 @export_range(0, 1000, 1) var LEFT_MARGIN_PX: int = 200
 @export var use_center_as_right_limit: bool = true
 @export_range(0, 600, 1) var center_bias_px: int = 50  # на сколько пикселей левее центра ограничивать
+@export var defends_right_side: bool = false  # true → игрок защищает правую сторону поля
 
 # Если знаешь точный полуразмер спрайта/коллайдера — задай здесь
 @export var half_size_override: Vector2 = Vector2.ZERO
@@ -32,6 +33,10 @@ func _ready() -> void:
 func reset_position() -> void:
 	global_position = start_pos
 	velocity = Vector2.ZERO
+
+func set_defends_right_side(value: bool) -> void:
+	"""Устанавливает флаг защиты правой стороны поля"""
+	defends_right_side = value
 
 func _physics_process(_delta: float) -> void:
 	# --- Ввод: WASD/стрелки через Input Map ---
@@ -56,14 +61,27 @@ func _physics_process(_delta: float) -> void:
 func _clamp_x() -> void:
 	var vp: Rect2 = get_viewport_rect()
 	var half: Vector2 = _resolve_half_size()
+	var center_x: float = vp.position.x + vp.size.x * 0.5
 
-	var min_x: float = vp.position.x + float(LEFT_MARGIN_PX) + half.x
+	var min_x: float
+	var max_x: float
 
-	var right_limit: float = vp.position.x + vp.size.x
-	if use_center_as_right_limit:
-		right_limit = vp.position.x + vp.size.x * 0.5 - float(center_bias_px)
-
-	var max_x: float = right_limit - half.x
+	if defends_right_side:
+		# правая половина поля
+		if use_center_as_right_limit:
+			min_x = center_x + float(center_bias_px) + half.x
+			max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
+		else:
+			min_x = vp.position.x + float(LEFT_MARGIN_PX) + half.x
+			max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
+	else:
+		# левая половина поля
+		if use_center_as_right_limit:
+			min_x = vp.position.x + float(LEFT_MARGIN_PX) + half.x
+			max_x = center_x - float(center_bias_px) - half.x
+		else:
+			min_x = vp.position.x + float(LEFT_MARGIN_PX) + half.x
+			max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
 
 	# Подстраховка: если окно узкое и границы пересеклись
 	if min_x > max_x:

@@ -29,6 +29,12 @@ func _ready() -> void:
 	if p_paddle and a_paddle:
 		# если игрок левее бота по оси X → он слева
 		Score.player_on_left = p_paddle.global_position.x < a_paddle.global_position.x
+		
+		# Инициализируем флаги сторон для ракеток
+		if p_paddle.has_method("set_defends_right_side"):
+			p_paddle.defends_right_side = not Score.player_on_left
+		if a_paddle.has_method("set_defends_right_side"):
+			a_paddle.defends_right_side = Score.player_on_left
 	else:
 		Score.player_on_left = true  # запасной вариант
 
@@ -169,7 +175,7 @@ func _on_half_finished() -> void:
 		_finalize_match()
 
 func _start_second_half() -> void:
-	"""Запуск второго тайма с возвратом мяча в центр"""
+	"""Запуск второго тайма с возвратом мяча в центр и сменой сторон"""
 	print("Турнир: Запуск второго тайма")
 	
 	# Скрываем надпись о паузе между таймами
@@ -181,15 +187,30 @@ func _start_second_half() -> void:
 	if ball:
 		ball.freeze = false
 	
+	# Меняем стороны: игрок переходит на правую сторону
+	Score.player_on_left = false
+	
+	# Переключаем флаги сторон для ракеток
+	var player_paddle = game_node.get_node_or_null("PlayerPaddle")
+	var ai_paddle = game_node.get_node_or_null("AiPaddle")
+	
+	if player_paddle and player_paddle.has_method("set_defends_right_side"):
+		player_paddle.defends_right_side = true
+	if ai_paddle and ai_paddle.has_method("set_defends_right_side"):
+		ai_paddle.defends_right_side = false
+	
+	# Меняем стартовые позиции ракеток местами
+	if player_paddle and ai_paddle:
+		var temp_pos = player_paddle.start_pos
+		player_paddle.start_pos = ai_paddle.start_pos
+		ai_paddle.start_pos = temp_pos
+	
 	# Запускаем второй тайм
 	if time_scoreboard:
 		time_scoreboard.start_second_half()
 	current_half = 2
 	
-	# Только сбрасываем позиции ракеток, НЕ трогаем мяч
-	var player_paddle = game_node.get_node_or_null("PlayerPaddle")
-	var ai_paddle = game_node.get_node_or_null("AiPaddle")
-	
+	# Сбрасываем позиции ракеток на новые места
 	if player_paddle and player_paddle.has_method("reset_position"):
 		player_paddle.reset_position()
 
@@ -201,7 +222,7 @@ func _start_second_half() -> void:
 		ball._teleport_to_spawn()
 		ball._serve()
 	
-	print("Турнир: Второй тайм начался")
+	print("Турнир: Второй тайм начался, стороны поменялись")
 
 func _finalize_match() -> void:
 	# Показываем надпись "Матч окончен" на 3 секунды
