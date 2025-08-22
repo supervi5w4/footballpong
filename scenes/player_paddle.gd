@@ -1,8 +1,9 @@
 # ------------------------------------------------------------
 # PlayerPaddle.gd — игрок-ракетка (Godot 4.4.1 | GDScript 2.0)
 # Ограничения по X:
-#  • Слева: фиксированный отступ LEFT_MARGIN_PX
-#  • Справа: центр экрана минус center_bias_px (если use_center_as_right_limit == true)
+#  • Левая сторона: фиксированный отступ LEFT_MARGIN_PX
+#  • Правая сторона: центр экрана минус center_bias_px (если use_center_as_right_limit == true)
+#  • Кастомные настройки для правой стороны: use_custom_right_side_limits
 # Управление: действия ui_left/right/up/down (Input Map)
 # ------------------------------------------------------------
 extends CharacterBody2D
@@ -17,8 +18,15 @@ const Utils: Script = preload("res://scripts/utils.gd")
 # --- Горизонтальные ограничения ---
 @export_range(0, 1000, 1) var LEFT_MARGIN_PX: int = 200
 @export var use_center_as_right_limit: bool = true
-@export_range(0, 600, 1) var center_bias_px: int = 50  # на сколько пикселей левее центра ограничивать
+@export_range(0, 600, 1) var center_bias_px: int = 50  # на сколько пикселей левее центра ограничивать (увеличено для защиты ворот)
 @export var defends_right_side: bool = false  # true → игрок защищает правую сторону поля
+
+# --- Дополнительные настройки для правой стороны поля ---
+@export var use_custom_right_side_limits: bool = false  # использовать кастомные ограничения для правой стороны
+@export_range(0, 1000, 1) var RIGHT_SIDE_LEFT_MARGIN: int = 0  # левый отступ для игрока на правой стороне
+@export_range(0, 1000, 1) var RIGHT_SIDE_RIGHT_MARGIN: int = 100  # правый отступ для игрока на правой стороне
+@export var right_side_can_reach_center: bool = true  # может ли игрок правой стороны доходить до центра
+@export_range(0, 600, 1) var right_side_center_bias_px: int = 50  # отступ от центра для игрока правой стороны
 
 # Если знаешь точный полуразмер спрайта/коллайдера — задай здесь
 @export var half_size_override: Vector2 = Vector2.ZERO
@@ -29,6 +37,11 @@ func _ready() -> void:
 	# подстраховка на случай кривых значений в инспекторе
 	accel = clamp(accel, 0.0, 1.0)
 	start_pos = global_position
+	
+	# Отладочная информация при запуске
+	if OS.is_debug_build():
+		print("PlayerPaddle ready - initial settings:")
+		print_current_settings()
 
 func reset_position() -> void:
 	global_position = start_pos
@@ -37,6 +50,54 @@ func reset_position() -> void:
 func set_defends_right_side(value: bool) -> void:
 	"""Устанавливает флаг защиты правой стороны поля"""
 	defends_right_side = value
+
+func enable_custom_right_side_limits() -> void:
+	"""Включает кастомные ограничения для правой стороны поля"""
+	use_custom_right_side_limits = true
+
+func disable_custom_right_side_limits() -> void:
+	"""Отключает кастомные ограничения для правой стороны поля"""
+	use_custom_right_side_limits = false
+
+func set_right_side_center_access(can_reach: bool) -> void:
+	"""Устанавливает, может ли игрок правой стороны доходить до центра поля"""
+	right_side_can_reach_center = can_reach
+
+func set_right_side_margins(left_margin: int, right_margin: int) -> void:
+	"""Устанавливает отступы для игрока правой стороны поля"""
+	RIGHT_SIDE_LEFT_MARGIN = left_margin
+	RIGHT_SIDE_RIGHT_MARGIN = right_margin
+
+func setup_right_side_player() -> void:
+	"""Быстрая настройка игрока для правой стороны поля"""
+	defends_right_side = true
+	use_custom_right_side_limits = true
+	right_side_can_reach_center = true
+	RIGHT_SIDE_LEFT_MARGIN = 50
+	RIGHT_SIDE_RIGHT_MARGIN = 200
+	right_side_center_bias_px = 50
+	print("Right side player setup complete!")
+
+func print_current_settings() -> void:
+	"""Выводит текущие настройки ограничений"""
+	print("=== Current Settings ===")
+	print("defends_right_side: ", defends_right_side)
+	print("use_custom_right_side_limits: ", use_custom_right_side_limits)
+	print("right_side_can_reach_center: ", right_side_can_reach_center)
+	print("RIGHT_SIDE_LEFT_MARGIN: ", RIGHT_SIDE_LEFT_MARGIN)
+	print("RIGHT_SIDE_RIGHT_MARGIN: ", RIGHT_SIDE_RIGHT_MARGIN)
+	print("right_side_center_bias_px: ", right_side_center_bias_px)
+	print("========================")
+
+func test_right_side_limits() -> void:
+	"""Тестирует настройки правой стороны - вызовите эту функцию из инспектора"""
+	print("=== Testing Right Side Limits ===")
+	setup_right_side_player()
+	print_current_settings()
+	
+	# Принудительно вызываем clamp для проверки
+	_clamp_x()
+	print("Test complete! Check console for debug info.")
 
 func _physics_process(_delta: float) -> void:
 	# --- Ввод: WASD/стрелки через Input Map ---
@@ -55,6 +116,10 @@ func _physics_process(_delta: float) -> void:
 	move_and_slide()
 	_handle_ball_collisions()
 	_clamp_x()
+	
+	# Отладочная информация о позиции (только если движемся)
+	if OS.is_debug_build() and velocity.length() > 0:
+		print("Position after clamp: ", global_position.x)
 
 # ----------------- ВСПОМОГАТЕЛЬНОЕ -----------------
 
@@ -68,7 +133,15 @@ func _clamp_x() -> void:
 
 	if defends_right_side:
 		# правая половина поля
-		if use_center_as_right_limit:
+		if use_custom_right_side_limits:
+			# Используем кастомные настройки для правой стороны
+			if right_side_can_reach_center:
+				min_x = center_x + float(right_side_center_bias_px) + half.x
+			else:
+				# Если не может доходить до центра, используем фиксированный отступ от левого края
+				min_x = vp.position.x + float(RIGHT_SIDE_LEFT_MARGIN) + half.x
+			max_x = vp.position.x + vp.size.x - float(RIGHT_SIDE_RIGHT_MARGIN) - half.x
+		elif use_center_as_right_limit:
 			min_x = center_x + float(center_bias_px) + half.x
 			max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
 		else:
@@ -86,6 +159,16 @@ func _clamp_x() -> void:
 	# Подстраховка: если окно узкое и границы пересеклись
 	if min_x > max_x:
 		max_x = min_x
+
+	# Отладочная информация
+	if OS.is_debug_build():
+		print("Clamp Debug - defends_right_side: ", defends_right_side)
+		print("Clamp Debug - use_custom_right_side_limits: ", use_custom_right_side_limits)
+		print("Clamp Debug - right_side_can_reach_center: ", right_side_can_reach_center)
+		print("Clamp Debug - min_x: ", min_x, " max_x: ", max_x)
+		print("Clamp Debug - current_x: ", global_position.x)
+		print("Clamp Debug - viewport_size: ", vp.size)
+		print("Clamp Debug - center_x: ", center_x)
 
 	global_position.x = clamp(global_position.x, min_x, max_x)
 
@@ -122,3 +205,21 @@ func _resolve_half_size() -> Vector2:
 
 	# 3) Дефолт
 	return Vector2(16, 16)
+
+# ------------------------------------------------------------
+# ПРИМЕР ИСПОЛЬЗОВАНИЯ НОВЫХ НАСТРОЕК:
+# 
+# # Настройка игрока для правой стороны поля
+# var player = $PlayerPaddle
+# player.set_defends_right_side(true)
+# player.enable_custom_right_side_limits()
+# player.set_right_side_center_access(true)  # может доходить до центра
+# player.set_right_side_margins(150, 100)    # отступы от краев
+# 
+# # Или через инспектор:
+# # - defends_right_side = true
+# # - use_custom_right_side_limits = true
+# # - right_side_can_reach_center = true
+# # - RIGHT_SIDE_LEFT_MARGIN = 150
+# # - RIGHT_SIDE_RIGHT_MARGIN = 100
+# ------------------------------------------------------------
