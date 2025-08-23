@@ -13,6 +13,7 @@ const MIN_SPEED     := 800.0   # Keep ball lively after bounces
 var _spawn_point: Vector2 = Vector2.ZERO
 var _rng := RandomNumberGenerator.new()
 var _current_speed_multiplier: float = 1.0  # Текущий множитель скорости
+var _game_node: Node = null
 
 func _ready() -> void:
 	_rng.randomize()
@@ -60,6 +61,8 @@ func boost_speed() -> void:
 # ---------- helpers ----------
 func _find_spawn() -> void:
 	var root := get_parent()
+	_game_node = root
+	
 	if (spawn_marker_path.is_empty()) and root and root.has_node("SpawnPoint"):
 		spawn_marker_path = self.get_path_to(root.get_node("SpawnPoint"))
 	var m := get_node_or_null(spawn_marker_path) as Node2D

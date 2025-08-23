@@ -56,6 +56,9 @@ var _viewport_size: Vector2 = Vector2.ZERO
 var _scale_factor: Vector2 = Vector2.ONE
 
 func _ready() -> void:
+	# Ждем один кадр для инициализации viewport
+	await get_tree().process_frame
+	
 	# Инициализируем контроллер поля
 	if field_controller and field:
 		field_controller.set_field_sprite(field)
@@ -66,6 +69,7 @@ func _ready() -> void:
 	
 	# Позиционируем все элементы относительно нового размера
 	_position_field_elements()
+	_position_ui_elements()
 	
 	# Сбрасываем счёт в начале игры
 	Score.reset_score()
@@ -108,7 +112,7 @@ func _exit_tree() -> void:
 
 func _calculate_viewport_scale() -> void:
 	"""Вычисляет масштаб для адаптации к текущему размеру viewport"""
-	var viewport_rect = get_viewport_rect()
+	var viewport_rect = get_viewport().get_visible_rect()
 	_viewport_size = viewport_rect.size
 	
 	# Базовый размер для которого заданы координаты элементов
@@ -153,14 +157,14 @@ func _position_field_elements() -> void:
 
 func _position_walls() -> void:
 	"""Позиционирует все стены"""
-	var wall_top = walls.get_node_or_null("WallTop/CollisionShape2D")
-	var wall_bottom = walls.get_node_or_null("WallBottom/CollisionShape2D")
-	var wall_left = walls.get_node_or_null("WallLeft/CollisionShape2D")
-	var wall_right = walls.get_node_or_null("WallRight/CollisionShape2D")
-	var wall_right2 = walls.get_node_or_null("WallRight2/CollisionShape2D")
-	var wall_right3 = walls.get_node_or_null("WallRight3/CollisionShape2D")
-	var wall_left2 = walls.get_node_or_null("WallLeft2/CollisionShape2D")
-	var wall_left3 = walls.get_node_or_null("WallLeft3/CollisionShape2D")
+	var wall_top = walls.get_node_or_null("WallTop")
+	var wall_bottom = walls.get_node_or_null("WallBottom")
+	var wall_left = walls.get_node_or_null("WallLeft")
+	var wall_right = walls.get_node_or_null("WallRight")
+	var wall_right2 = walls.get_node_or_null("WallRight2")
+	var wall_right3 = walls.get_node_or_null("WallRight3")
+	var wall_left2 = walls.get_node_or_null("WallLeft2")
+	var wall_left3 = walls.get_node_or_null("WallLeft3")
 	
 	if wall_top:
 		wall_top.position = _scale_position(BASE_WALL_TOP_POS)
@@ -211,14 +215,26 @@ func get_spawn_position() -> Vector2:
 	"""Возвращает позицию спавна мяча"""
 	if not spawn_point:
 		spawn_point = get_node_or_null("SpawnPoint")
+		if not spawn_point:
+			# Если SpawnPoint не найден, возвращаем центр экрана
+			return _viewport_size * 0.5
 	return spawn_point.position if spawn_point else Vector2.ZERO
+
+func _position_ui_elements() -> void:
+	"""Позиционирует UI элементы относительно нового размера viewport"""
+	# UI элементы уже используют anchors, поэтому они должны автоматически адаптироваться
+	# Но мы можем добавить дополнительную логику если нужно
+	
+	print("UI elements positioned for viewport size: ", _viewport_size)
 
 func _notification(what: int) -> void:
 	"""Обработка системных уведомлений"""
 	if what == NOTIFICATION_WM_SIZE_CHANGED:
 		# При изменении размера окна пересчитываем позиции
+		await get_tree().process_frame
 		_calculate_viewport_scale()
 		_position_field_elements()
+		_position_ui_elements()
 		print("Window size changed, repositioned field elements")
 
 func _on_field_scaled(new_scale: Vector2, new_position: Vector2) -> void:

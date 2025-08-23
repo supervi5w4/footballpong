@@ -12,8 +12,9 @@ class_name FieldController
 signal field_scaled(new_scale: Vector2, new_position: Vector2)
 
 # --- Константы ---
-const MIN_MARGIN := 50.0  # Минимальный отступ от краев экрана
+const MIN_MARGIN := 100.0  # Увеличиваем минимальный отступ от краев экрана
 const ASPECT_RATIO_TOLERANCE := 0.1  # Допустимое отклонение от пропорций
+const BASE_FIELD_SIZE := Vector2(1536, 1080)  # Базовый размер текстуры поля
 
 # --- Переменные ---
 var _viewport_size: Vector2 = Vector2.ZERO
@@ -45,12 +46,12 @@ func _notification(what: int) -> void:
 
 func _calculate_field_scale() -> void:
 	"""Вычисляет оптимальный масштаб для поля"""
-	var viewport_rect = get_viewport_rect()
+	var viewport_rect = get_viewport().get_visible_rect()
 	_viewport_size = viewport_rect.size
 	
-	# Если размер текстуры не известен, используем базовый размер
+	# Используем размер текстуры или базовый размер
 	if _field_texture_size == Vector2.ZERO:
-		_field_texture_size = Vector2(1536, 1080)  # Примерный размер текстуры поля
+		_field_texture_size = BASE_FIELD_SIZE
 	
 	# Вычисляем доступное пространство с учетом отступов
 	var available_size = _viewport_size - Vector2(MIN_MARGIN * 2, MIN_MARGIN * 2)
@@ -59,11 +60,11 @@ func _calculate_field_scale() -> void:
 	var scale_x = available_size.x / _field_texture_size.x
 	var scale_y = available_size.y / _field_texture_size.y
 	
-	# Используем меньший масштаб, чтобы сохранить пропорции
+	# Используем меньший масштаб, чтобы сохранить пропорции и не выйти за границы
 	var uniform_scale = min(scale_x, scale_y)
 	
-	# Проверяем, что масштаб не меньше минимального
-	uniform_scale = max(uniform_scale, 0.1)
+	# Проверяем, что масштаб не меньше минимального и не больше максимального
+	uniform_scale = clamp(uniform_scale, 0.3, 2.0)
 	
 	_current_scale = Vector2(uniform_scale, uniform_scale)
 	_current_position = _viewport_size * 0.5
@@ -72,10 +73,13 @@ func _calculate_field_scale() -> void:
 	if field_sprite:
 		field_sprite.scale = _current_scale
 		field_sprite.position = _current_position
+		# Убеждаемся, что поле находится на заднем плане
+		field_sprite.z_index = -1
 	
 	print("Field Controller:")
 	print("  Viewport size: ", _viewport_size)
 	print("  Field texture size: ", _field_texture_size)
+	print("  Available size: ", available_size)
 	print("  Calculated scale: ", _current_scale)
 	print("  Field position: ", _current_position)
 	
@@ -95,7 +99,7 @@ func get_field_bounds() -> Rect2:
 	if not field_sprite or not field_sprite.texture:
 		return Rect2()
 	
-	var texture_size = field_sprite.texture.get_size() * _current_scale
+	var texture_size = _field_texture_size * _current_scale
 	var half_size = texture_size * 0.5
 	
 	return Rect2(

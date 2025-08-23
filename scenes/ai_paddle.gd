@@ -59,6 +59,8 @@ var _fake_timer: float = 0.0
 var start_pos: Vector2 = Vector2.ZERO
 var _is_first_hit: bool = true
 var _smooth_factor: float = 0.15  # Фактор плавности (0.1 = очень плавно, 0.3 = быстро)
+var _game_node: Node = null
+var _scale_factor: Vector2 = Vector2.ONE
 
 # ---------------- Dynamic Field Properties ----------------
 func get_field_size() -> Vector2:
@@ -84,8 +86,28 @@ func _ready() -> void:
 		return
 	start_pos = global_position
 	_smooth_target_pos = global_position  # Инициализируем плавную цель
+	
+	# Находим игровую сцену для получения масштаба
+	_find_game_node()
+	
 	_think()
 	_schedule_next_think()
+
+func _find_game_node() -> void:
+	"""Находит игровую сцену для получения масштаба"""
+	var parent = get_parent()
+	while parent and not parent.has_method("get_spawn_position"):
+		parent = parent.get_parent()
+	_game_node = parent
+
+func _get_scale_factor() -> Vector2:
+	"""Получает текущий масштаб от игровой сцены"""
+	if _game_node and _game_node.has_method("_calculate_viewport_scale"):
+		# Получаем масштаб из игровой сцены
+		var viewport_size = get_viewport().get_visible_rect().size
+		var base_size = Vector2(1920, 1080)
+		return Vector2(viewport_size.x / base_size.x, viewport_size.y / base_size.y)
+	return Vector2.ONE
 
 func reset_position() -> void:
 	global_position = start_pos
@@ -108,6 +130,9 @@ func set_defends_right_side(value: bool) -> void:
 
 # ---------------- MAIN ----------------
 func _physics_process(delta: float) -> void:
+	# Обновляем масштаб
+	_scale_factor = _get_scale_factor()
+	
 	_time_to_next_think -= delta
 	_fake_timer -= delta
 	if _time_to_next_think <= 0.0:
@@ -438,25 +463,29 @@ func _clamp_x() -> void:
 	var half := _resolve_half_size()
 	var center_x := vp.position.x + vp.size.x * 0.5
 
+	# Применяем масштаб к отступам
+	var scaled_left_margin = float(LEFT_MARGIN_PX) * _scale_factor.x
+	var scaled_center_bias = float(center_bias_px) * _scale_factor.x
+
 	var min_x: float
 	var max_x: float
 
 	if defends_right_side:
 		# правая половина
 		if use_center_as_right_limit:
-			min_x = center_x + float(center_bias_px) + half.x
-			max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
+			min_x = center_x + scaled_center_bias + half.x
+			max_x = vp.position.x + vp.size.x - scaled_left_margin - half.x
 		else:
-			min_x = vp.position.x + float(LEFT_MARGIN_PX) + half.x
-			max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
+			min_x = vp.position.x + scaled_left_margin + half.x
+			max_x = vp.position.x + vp.size.x - scaled_left_margin - half.x
 	else:
 		# левая половина
 		if use_center_as_right_limit:
-			min_x = vp.position.x + float(LEFT_MARGIN_PX) + half.x
-			max_x = center_x - float(center_bias_px) - half.x
+			min_x = vp.position.x + scaled_left_margin + half.x
+			max_x = center_x - scaled_center_bias - half.x
 		else:
-			min_x = vp.position.x + float(LEFT_MARGIN_PX) + half.x
-			max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
+			min_x = vp.position.x + scaled_left_margin + half.x
+			max_x = vp.position.x + vp.size.x - scaled_left_margin - half.x
 
 	if min_x > max_x:
 		max_x = min_x
