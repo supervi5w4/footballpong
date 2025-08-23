@@ -64,6 +64,10 @@ func _find_spawn() -> void:
 		spawn_marker_path = self.get_path_to(root.get_node("SpawnPoint"))
 	var m := get_node_or_null(spawn_marker_path) as Node2D
 	_spawn_point = (m.global_position if m else global_position)
+	
+	# Если родитель - это Game, получаем позицию спавна от него
+	if root and root.has_method("get_spawn_position"):
+		_spawn_point = root.get_spawn_position()
 
 func _teleport_to_spawn() -> void:
 	# Полная остановка

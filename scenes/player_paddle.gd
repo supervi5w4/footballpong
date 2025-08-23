@@ -47,6 +47,11 @@ func reset_position() -> void:
 	global_position = start_pos
 	velocity = Vector2.ZERO
 
+func set_start_position(pos: Vector2) -> void:
+	"""Устанавливает новую стартовую позицию ракетки"""
+	start_pos = pos
+	global_position = pos
+
 func set_defends_right_side(value: bool) -> void:
 	"""Устанавливает флаг защиты правой стороны поля"""
 	defends_right_side = value
@@ -117,8 +122,8 @@ func _physics_process(_delta: float) -> void:
 	_handle_ball_collisions()
 	_clamp_x()
 	
-	# Отладочная информация о позиции (только если движемся)
-	if OS.is_debug_build() and velocity.length() > 0:
+	# Отладочная информация о позиции (только в режиме отладки и если движемся)
+	if OS.is_debug_build() and velocity.length() > 0 and Input.is_action_just_pressed("ui_accept"):
 		print("Position after clamp: ", global_position.x)
 
 # ----------------- ВСПОМОГАТЕЛЬНОЕ -----------------
@@ -162,8 +167,8 @@ func _clamp_x() -> void:
 	if min_x > max_x:
 		max_x = min_x
 
-	# Отладочная информация
-	if OS.is_debug_build():
+	# Отладочная информация (только при ручном включении режима отладки)
+	if OS.is_debug_build() and Input.is_action_pressed("ui_cancel"):
 		print("Clamp Debug - defends_right_side: ", defends_right_side)
 		print("Clamp Debug - use_custom_right_side_limits: ", use_custom_right_side_limits)
 		print("Clamp Debug - right_side_can_reach_center: ", right_side_can_reach_center)

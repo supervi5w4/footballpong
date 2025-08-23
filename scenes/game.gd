@@ -5,6 +5,7 @@
 #   - работу с мячом и ракетками
 #   - обновление табло (UI)
 #   - управление временем матча
+#   - динамическое позиционирование поля и стен
 # Требует:
 #   - Score (Autoload синглтон)
 #   - Label-узлы: UI/ScoreLeft и UI/ScoreRight
@@ -17,10 +18,32 @@ class_name Game
 # --- Константы ---
 const RETURN_SCENE := "res://scenes/menu.tscn"
 
+# --- Константы для позиционирования (базовые для 1920x1080) ---
+const BASE_FIELD_POSITION := Vector2(962, 533)
+const BASE_FIELD_SCALE := Vector2(1.25651, 1.14258)
+const BASE_WALL_TOP_POS := Vector2(956, 132)
+const BASE_WALL_BOTTOM_POS := Vector2(959.5, 954.5)
+const BASE_WALL_LEFT_POS := Vector2(33.75, 534.25)
+const BASE_WALL_RIGHT_POS := Vector2(1811, 532.5)
+const BASE_WALL_RIGHT2_POS := Vector2(1677, 700.5)
+const BASE_WALL_RIGHT3_POS := Vector2(1679, 356.438)
+const BASE_WALL_LEFT2_POS := Vector2(85.875, 367.125)
+const BASE_WALL_LEFT3_POS := Vector2(86, 699)
+const BASE_GOAL_RIGHT_POS := Vector2(1673.25, 531.5)
+const BASE_GOAL_LEFT_POS := Vector2(93.3764, 532.241)
+const BASE_SPAWN_POS := Vector2(880, 529)
+const BASE_PLAYER_PADDLE_POS := Vector2(276, 531)
+const BASE_AI_PADDLE_POS := Vector2(1486, 529)
+
 # --- Узлы сцены ---
 @onready var ball: RigidBody2D = $Ball
 @onready var player_paddle: CharacterBody2D = $PlayerPaddle
 @onready var ai_paddle: CharacterBody2D = $AiPaddle
+@onready var field: Sprite2D = $Field
+@onready var walls: Node2D = $Walls
+@onready var goal_area_right: Area2D = $GoalAreaRight
+@onready var goal_area_left: Area2D = $GoalAreaLeft
+@onready var spawn_point: Marker2D = $SpawnPoint
 
 @onready var score_left_label: Label = $UI/ScoreLeft
 @onready var score_right_label: Label = $UI/ScoreRight
@@ -28,8 +51,16 @@ const RETURN_SCENE := "res://scenes/menu.tscn"
 @onready var message_label: Label = $UI/MessageLabel
 
 var _game_started: bool = false
+var _viewport_size: Vector2 = Vector2.ZERO
+var _scale_factor: Vector2 = Vector2.ONE
 
 func _ready() -> void:
+	# Вычисляем размеры viewport и масштаб
+	_calculate_viewport_scale()
+	
+	# Позиционируем все элементы относительно нового размера
+	_position_field_elements()
+	
 	# Сбрасываем счёт в начале игры
 	Score.reset_score()
 	Score.player_on_left = true  # Игрок начинает слева
@@ -68,6 +99,118 @@ func _exit_tree() -> void:
 	# Останавливаем таймер матча
 	if time_scoreboard:
 		time_scoreboard.stop_match()
+
+func _calculate_viewport_scale() -> void:
+	"""Вычисляет масштаб для адаптации к текущему размеру viewport"""
+	var viewport_rect = get_viewport_rect()
+	_viewport_size = viewport_rect.size
+	
+	# Базовый размер для которого заданы координаты
+	var base_size = Vector2(1920, 1080)
+	
+	# Вычисляем масштаб по X и Y
+	_scale_factor.x = _viewport_size.x / base_size.x
+	_scale_factor.y = _viewport_size.y / base_size.y
+	
+	print("Viewport size: ", _viewport_size)
+	print("Scale factor: ", _scale_factor)
+
+func _position_field_elements() -> void:
+	"""Позиционирует все элементы поля относительно нового размера viewport"""
+	if not field or not walls:
+		return
+	
+	# Позиционируем поле
+	field.position = _scale_position(BASE_FIELD_POSITION)
+	field.scale = BASE_FIELD_SCALE * _scale_factor
+	
+	# Позиционируем стены
+	_position_walls()
+	
+	# Позиционируем ворота
+	goal_area_right.position = _scale_position(BASE_GOAL_RIGHT_POS)
+	goal_area_left.position = _scale_position(BASE_GOAL_LEFT_POS)
+	
+	# Позиционируем точку спавна
+	spawn_point.position = _scale_position(BASE_SPAWN_POS)
+	
+	# Позиционируем ракетки
+	player_paddle.position = _scale_position(BASE_PLAYER_PADDLE_POS)
+	ai_paddle.position = _scale_position(BASE_AI_PADDLE_POS)
+	
+	# Обновляем стартовые позиции ракеток
+	if player_paddle.has_method("set_start_position"):
+		player_paddle.set_start_position(player_paddle.position)
+	if ai_paddle.has_method("set_start_position"):
+		ai_paddle.set_start_position(ai_paddle.position)
+
+func _position_walls() -> void:
+	"""Позиционирует все стены"""
+	var wall_top = walls.get_node_or_null("WallTop/CollisionShape2D")
+	var wall_bottom = walls.get_node_or_null("WallBottom/CollisionShape2D")
+	var wall_left = walls.get_node_or_null("WallLeft/CollisionShape2D")
+	var wall_right = walls.get_node_or_null("WallRight/CollisionShape2D")
+	var wall_right2 = walls.get_node_or_null("WallRight2/CollisionShape2D")
+	var wall_right3 = walls.get_node_or_null("WallRight3/CollisionShape2D")
+	var wall_left2 = walls.get_node_or_null("WallLeft2/CollisionShape2D")
+	var wall_left3 = walls.get_node_or_null("WallLeft3/CollisionShape2D")
+	
+	if wall_top:
+		wall_top.position = _scale_position(BASE_WALL_TOP_POS)
+	if wall_bottom:
+		wall_bottom.position = _scale_position(BASE_WALL_BOTTOM_POS)
+	if wall_left:
+		wall_left.position = _scale_position(BASE_WALL_LEFT_POS)
+	if wall_right:
+		wall_right.position = _scale_position(BASE_WALL_RIGHT_POS)
+	if wall_right2:
+		wall_right2.position = _scale_position(BASE_WALL_RIGHT2_POS)
+	if wall_right3:
+		wall_right3.position = _scale_position(BASE_WALL_RIGHT3_POS)
+	if wall_left2:
+		wall_left2.position = _scale_position(BASE_WALL_LEFT2_POS)
+	if wall_left3:
+		wall_left3.position = _scale_position(BASE_WALL_LEFT3_POS)
+
+func _scale_position(base_position: Vector2) -> Vector2:
+	"""Масштабирует позицию относительно центра экрана"""
+	var viewport_center = _viewport_size * 0.5
+	var base_center = Vector2(1920, 1080) * 0.5
+	
+	# Вычисляем смещение от центра
+	var offset = base_position - base_center
+	
+	# Применяем масштаб к смещению
+	var scaled_offset = offset * _scale_factor
+	
+	# Возвращаем новую позицию относительно центра нового viewport
+	return viewport_center + scaled_offset
+
+func get_field_bounds() -> Rect2:
+	"""Возвращает границы игрового поля"""
+	var field_rect = Rect2()
+	field_rect.position = Vector2(50, 100) * _scale_factor
+	field_rect.size = Vector2(_viewport_size.x - 100, _viewport_size.y - 200) * _scale_factor
+	return field_rect
+
+func get_goal_positions() -> Dictionary:
+	"""Возвращает позиции ворот"""
+	return {
+		"left": goal_area_left.position,
+		"right": goal_area_right.position
+	}
+
+func get_spawn_position() -> Vector2:
+	"""Возвращает позицию спавна мяча"""
+	return spawn_point.position
+
+func _notification(what: int) -> void:
+	"""Обработка системных уведомлений"""
+	if what == NOTIFICATION_WM_SIZE_CHANGED:
+		# При изменении размера окна пересчитываем позиции
+		_calculate_viewport_scale()
+		_position_field_elements()
+		print("Window size changed, repositioned field elements")
 
 # Обновление табло
 func _update_scoreboard(_left: int = 0, _right: int = 0) -> void:

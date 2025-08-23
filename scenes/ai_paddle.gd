@@ -26,10 +26,7 @@ class_name AiPaddle
 @export var paddle_bounce_damp: float = 0.8
 
 @export var goal_left: Vector2 = Vector2(0, 540)
-@export var goal_right: Vector2 = Vector2(1920, 540)
 
-const FIELD_SIZE: Vector2i = Vector2i(1920, 1080)
-const HALF_FIELD_X: int = FIELD_SIZE.x / 2
 const BASE_SPEED: float = 850.0
 const REACTION_BASE: float = 0.12
 const ATTACK_OFFSET: float = 80.0
@@ -63,6 +60,20 @@ var start_pos: Vector2 = Vector2.ZERO
 var _is_first_hit: bool = true
 var _smooth_factor: float = 0.15  # Фактор плавности (0.1 = очень плавно, 0.3 = быстро)
 
+# ---------------- Dynamic Field Properties ----------------
+func get_field_size() -> Vector2:
+	"""Возвращает текущий размер игрового поля из viewport"""
+	return get_viewport_rect().size
+
+func get_half_field_x() -> float:
+	"""Возвращает координату X центра поля"""
+	return get_field_size().x * 0.5
+
+func get_goal_right() -> Vector2:
+	"""Возвращает позицию правых ворот"""
+	var field_size = get_field_size()
+	return Vector2(field_size.x, field_size.y * 0.5)
+
 # ---------------- READY ----------------
 func _ready() -> void:
 	_ball = get_node_or_null(ball_path) as RigidBody2D
@@ -84,6 +95,12 @@ func reset_position() -> void:
 	_time_to_next_think = 0.0
 	_fake_timer = 0.0
 	_is_first_hit = true
+
+func set_start_position(pos: Vector2) -> void:
+	"""Устанавливает новую стартовую позицию ракетки"""
+	start_pos = pos
+	global_position = pos
+	_smooth_target_pos = pos
 
 func set_defends_right_side(value: bool) -> void:
 	"""Устанавливает флаг защиты правой стороны поля"""
@@ -132,7 +149,7 @@ func _handle_ball_collisions() -> void:
 
 func _check_first_hit_reset() -> void:
 	if not _is_first_hit:
-		var left_side: bool = _ball.global_position.x < HALF_FIELD_X
+		var left_side: bool = _ball.global_position.x < get_half_field_x()
 		if (defends_right_side and left_side) or (not defends_right_side and not left_side):
 			_is_first_hit = true
 
@@ -173,7 +190,8 @@ func _think() -> void:
 		var b_to_player: bool = ball_dir.dot(toward_player) > 0.7
 		var b_to_me: bool = ball_dir.dot(toward_me) > 0.7
 		var fast_ball: bool = spd > FAST_BALL_SPEED
-		var edge_near: bool = ball_pos.y < EDGE_MARGIN or ball_pos.y > float(FIELD_SIZE.y) - EDGE_MARGIN
+		var field_size = get_field_size()
+		var edge_near: bool = ball_pos.y < EDGE_MARGIN or ball_pos.y > field_size.y - EDGE_MARGIN
 		var strong_hit: bool = b_to_me and (spd > STRONG_HIT_SPEED or abs(ball_dir.y) > STRONG_HIT_ANGLE)
 
 		if strong_hit and randf() < 0.5:
@@ -244,28 +262,31 @@ func _think() -> void:
 
 # ------------ Helper Calculations ---------------
 func _goal_pos(ball_pos: Vector2) -> Vector2:
-	var my_goal: Vector2 = goal_right if defends_right_side else goal_left
+	var my_goal: Vector2 = get_goal_right() if defends_right_side else goal_left
 	return my_goal.lerp(ball_pos, 0.25)
 
 func _attack_pos(ball_pos: Vector2) -> Vector2:
-	var enemy_goal: Vector2 = goal_left if defends_right_side else goal_right
+	var enemy_goal: Vector2 = goal_left if defends_right_side else get_goal_right()
 	var y_offset: float = ATTACK_OFFSET * sign(ball_pos.y - _player.global_position.y)
 	return (ball_pos + Vector2(0, y_offset)).lerp(enemy_goal, 0.10)
 
 func _block_pos(player_pos: Vector2) -> Vector2:
-	var offset_y: float = 120.0 if player_pos.y < FIELD_SIZE.y * 0.5 else -120.0
-	return Vector2(player_pos.x, clamp(player_pos.y + offset_y, 80.0, float(FIELD_SIZE.y - 80)))
+	var field_size = get_field_size()
+	var offset_y: float = 120.0 if player_pos.y < field_size.y * 0.5 else -120.0
+	return Vector2(player_pos.x, clamp(player_pos.y + offset_y, 80.0, field_size.y - 80))
 
 func _high_speed_pos(ball_pos: Vector2) -> Vector2:
 	var intercept: Vector2 = _predict_intercept()
 	return intercept.lerp(_goal_pos(ball_pos), 0.5)
 
 func _edge_guard_pos(ball_pos: Vector2) -> Vector2:
-	var target_y: float = 80.0 if ball_pos.y < FIELD_SIZE.y * 0.5 else float(FIELD_SIZE.y - 80.0)
+	var field_size = get_field_size()
+	var target_y: float = 80.0 if ball_pos.y < field_size.y * 0.5 else field_size.y - 80.0
 	return Vector2(global_position.x, target_y)
 
 func _predict_second_bounce() -> Vector2:
-	var wall_x: float = float(FIELD_SIZE.x) if defends_right_side else 0.0
+	var field_size = get_field_size()
+	var wall_x: float = field_size.x if defends_right_side else 0.0
 	var from: Vector2 = _ball.global_position
 	var vel: Vector2 = _ball.linear_velocity.normalized()
 	var dist: float = abs(wall_x - from.x)
@@ -274,10 +295,11 @@ func _predict_second_bounce() -> Vector2:
 	return first_hit + after_bounce * dist * 0.3
 
 func _predict_multi_bounce(ball_pos: Vector2, velocity: Vector2, max_bounces: int) -> Vector2:
+	var field_size = get_field_size()
 	var pos: Vector2 = ball_pos
 	var vel: Vector2 = velocity
 	var top: float = 0.0
-	var bottom: float = float(FIELD_SIZE.y)
+	var bottom: float = field_size.y
 	var target_x: float = global_position.x
 	var player_x: float = _player.global_position.x
 	var b: int = 0
@@ -318,7 +340,7 @@ func _predict_multi_bounce(ball_pos: Vector2, velocity: Vector2, max_bounces: in
 
 # ---------- Prediction / Dodge helpers ----------
 func _is_on_my_side(pos: Vector2) -> bool:
-	return (defends_right_side and pos.x > HALF_FIELD_X) or (not defends_right_side and pos.x < HALF_FIELD_X)
+	return (defends_right_side and pos.x > get_half_field_x()) or (not defends_right_side and pos.x < get_half_field_x())
 
 func _is_ball_behind() -> bool:
 	return (defends_right_side and _ball.global_position.x > global_position.x) or \
@@ -334,7 +356,8 @@ func _predict_intercept() -> Vector2:
 	if t < 0.0:
 		return p
 	var y: float = p.y + v.y * t
-	var height: float = FIELD_SIZE.y
+	var field_size = get_field_size()
+	var height: float = field_size.y
 	var period: float = height * 2.0
 	y = fposmod(y, period)
 	if y > height:
@@ -342,14 +365,15 @@ func _predict_intercept() -> Vector2:
 	return Vector2(paddle_x, clamp(y, 80.0, height - 80.0))
 
 func _dodge_pos(ball_pos: Vector2) -> Vector2:
+	var field_size = get_field_size()
 	var dir_y: float = sign(global_position.y - ball_pos.y)
 	if is_zero_approx(dir_y):
-		dir_y = 1.0 if ball_pos.y < FIELD_SIZE.y * 0.5 else -1.0
-	var target_y: float = clamp(global_position.y + dir_y * 400.0, 80.0, float(FIELD_SIZE.y - 80.0))
+		dir_y = 1.0 if ball_pos.y < field_size.y * 0.5 else -1.0
+	var target_y: float = clamp(global_position.y + dir_y * 400.0, 80.0, field_size.y - 80.0)
 	return Vector2(global_position.x, target_y)
 
 func _retreat_pos() -> Vector2:
-	var my_goal: Vector2 = goal_right if defends_right_side else goal_left
+	var my_goal: Vector2 = get_goal_right() if defends_right_side else goal_left
 	return my_goal.lerp(start_pos, 0.2)
 
 func _add_error(style: Dictionary) -> void:
@@ -358,11 +382,12 @@ func _add_error(style: Dictionary) -> void:
 	_target_pos += Vector2(randf_range(-r, r), randf_range(-r, r))
 
 func _clamp_advancement() -> void:
-	var limit_x: float = FIELD_SIZE.x * ADVANCE_LIMIT_PROPORTION
+	var field_size = get_field_size()
+	var limit_x: float = field_size.x * ADVANCE_LIMIT_PROPORTION
 	if defends_right_side:
 		_target_pos.x = max(_target_pos.x, limit_x)
 	else:
-		_target_pos.x = min(_target_pos.x, FIELD_SIZE.x - limit_x)
+		_target_pos.x = min(_target_pos.x, field_size.x - limit_x)
 
 # ---------------- Movement & Clamp X ----------------
 func _move() -> void:
