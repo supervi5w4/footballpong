@@ -24,9 +24,9 @@ const Utils: Script = preload("res://scripts/utils.gd")
 # --- Дополнительные настройки для правой стороны поля ---
 @export var use_custom_right_side_limits: bool = false  # использовать кастомные ограничения для правой стороны
 @export_range(0, 1000, 1) var RIGHT_SIDE_LEFT_MARGIN: int = 0  # левый отступ для игрока на правой стороне
-@export_range(0, 1000, 1) var RIGHT_SIDE_RIGHT_MARGIN: int = 100  # правый отступ для игрока на правой стороне
+@export_range(0, 1000, 1) var RIGHT_SIDE_RIGHT_MARGIN: int = 200  # правый отступ для игрока на правой стороне
 @export var right_side_can_reach_center: bool = true  # может ли игрок правой стороны доходить до центра
-@export_range(0, 600, 1) var right_side_center_bias_px: int = 50  # отступ от центра для игрока правой стороны
+@export_range(0, 600, 1) var right_side_center_bias_px: int = -100  # отступ от центра для игрока правой стороны
 
 # Если знаешь точный полуразмер спрайта/коллайдера — задай здесь
 @export var half_size_override: Vector2 = Vector2.ZERO
@@ -138,15 +138,17 @@ func _clamp_x() -> void:
 			if right_side_can_reach_center:
 				min_x = center_x + float(right_side_center_bias_px) + half.x
 			else:
-				# Если не может доходить до центра, используем фиксированный отступ от левого края
+				# Если не может доходить до центра, задаём отступ от левого края поля
 				min_x = vp.position.x + float(RIGHT_SIDE_LEFT_MARGIN) + half.x
 			max_x = vp.position.x + vp.size.x - float(RIGHT_SIDE_RIGHT_MARGIN) - half.x
 		elif use_center_as_right_limit:
-			min_x = center_x + float(center_bias_px) + half.x
-			max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
+			# Зеркалим ограничение по центру для правой стороны
+			min_x = center_x + float(right_side_center_bias_px) + half.x
+			max_x = vp.position.x + vp.size.x - float(RIGHT_SIDE_RIGHT_MARGIN) - half.x
 		else:
-			min_x = vp.position.x + float(LEFT_MARGIN_PX) + half.x
-			max_x = vp.position.x + vp.size.x - float(LEFT_MARGIN_PX) - half.x
+			# Поле ограничено только отступами
+			min_x = vp.position.x + float(RIGHT_SIDE_LEFT_MARGIN) + half.x
+			max_x = vp.position.x + vp.size.x - float(RIGHT_SIDE_RIGHT_MARGIN) - half.x
 	else:
 		# левая половина поля
 		if use_center_as_right_limit:
