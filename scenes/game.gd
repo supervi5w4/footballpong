@@ -44,6 +44,7 @@ const BASE_AI_PADDLE_POS := Vector2(1486, 529)
 @onready var goal_area_right: Area2D = $GoalAreaRight
 @onready var goal_area_left: Area2D = $GoalAreaLeft
 @onready var spawn_point: Marker2D = $SpawnPoint
+@onready var field_controller: FieldController = $FieldController
 
 @onready var score_left_label: Label = $UI/ScoreLeft
 @onready var score_right_label: Label = $UI/ScoreRight
@@ -55,6 +56,11 @@ var _viewport_size: Vector2 = Vector2.ZERO
 var _scale_factor: Vector2 = Vector2.ONE
 
 func _ready() -> void:
+	# Инициализируем контроллер поля
+	if field_controller and field:
+		field_controller.set_field_sprite(field)
+		field_controller.field_scaled.connect(_on_field_scaled)
+	
 	# Вычисляем размеры viewport и масштаб
 	_calculate_viewport_scale()
 	
@@ -105,10 +111,10 @@ func _calculate_viewport_scale() -> void:
 	var viewport_rect = get_viewport_rect()
 	_viewport_size = viewport_rect.size
 	
-	# Базовый размер для которого заданы координаты
+	# Базовый размер для которого заданы координаты элементов
 	var base_size = Vector2(1920, 1080)
 	
-	# Вычисляем масштаб по X и Y
+	# Вычисляем общий масштаб для позиционирования элементов
 	_scale_factor.x = _viewport_size.x / base_size.x
 	_scale_factor.y = _viewport_size.y / base_size.y
 	
@@ -117,12 +123,10 @@ func _calculate_viewport_scale() -> void:
 
 func _position_field_elements() -> void:
 	"""Позиционирует все элементы поля относительно нового размера viewport"""
-	if not field or not walls:
+	if not walls:
 		return
 	
-	# Позиционируем поле
-	field.position = _scale_position(BASE_FIELD_POSITION)
-	field.scale = BASE_FIELD_SCALE * _scale_factor
+	# Позиционирование поля теперь управляется FieldController
 	
 	# Позиционируем стены
 	_position_walls()
@@ -132,7 +136,10 @@ func _position_field_elements() -> void:
 	goal_area_left.position = _scale_position(BASE_GOAL_LEFT_POS)
 	
 	# Позиционируем точку спавна
-	spawn_point.position = _scale_position(BASE_SPAWN_POS)
+	if not spawn_point:
+		spawn_point = get_node_or_null("SpawnPoint")
+	if spawn_point:
+		spawn_point.position = _scale_position(BASE_SPAWN_POS)
 	
 	# Позиционируем ракетки
 	player_paddle.position = _scale_position(BASE_PLAYER_PADDLE_POS)
@@ -202,7 +209,9 @@ func get_goal_positions() -> Dictionary:
 
 func get_spawn_position() -> Vector2:
 	"""Возвращает позицию спавна мяча"""
-	return spawn_point.position
+	if not spawn_point:
+		spawn_point = get_node_or_null("SpawnPoint")
+	return spawn_point.position if spawn_point else Vector2.ZERO
 
 func _notification(what: int) -> void:
 	"""Обработка системных уведомлений"""
@@ -211,6 +220,11 @@ func _notification(what: int) -> void:
 		_calculate_viewport_scale()
 		_position_field_elements()
 		print("Window size changed, repositioned field elements")
+
+func _on_field_scaled(new_scale: Vector2, new_position: Vector2) -> void:
+	"""Обработчик изменения масштаба поля"""
+	print("Field scaled to: ", new_scale, " at position: ", new_position)
+	# Здесь можно добавить дополнительную логику при изменении масштаба поля
 
 # Обновление табло
 func _update_scoreboard(_left: int = 0, _right: int = 0) -> void:

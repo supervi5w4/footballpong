@@ -1,5 +1,6 @@
-[gd_scene load_steps=22 format=3 uid="uid://8wkf1f060q6x"]
+[gd_scene load_steps=23 format=3 uid="uid://8wkf1f060q6x"]
 
+[ext_resource type="Script" uid="uid://b0hgie6nqlq2u" path="res://scenes/field_controller.gd" id="1_field_controller"]
 [ext_resource type="Script" uid="uid://2xoilbwedro3" path="res://scenes/game.gd" id="1_gee14"]
 [ext_resource type="Texture2D" uid="uid://37rfb12sxmf4" path="res://assets/gfx/field.png" id="1_uwrxv"]
 [ext_resource type="PackedScene" uid="uid://50dwkkpv3435" path="res://scenes/ball.tscn" id="2_yqjtg"]
@@ -43,9 +44,10 @@ size = Vector2(24.5, 111.564)
 [node name="Game" type="Node2D"]
 script = ExtResource("1_gee14")
 
+[node name="FieldController" type="Node" parent="."]
+script = ExtResource("1_field_controller")
+
 [node name="Field" type="Sprite2D" parent="."]
-position = Vector2(962, 533)
-scale = Vector2(1.25651, 1.14258)
 texture = ExtResource("1_uwrxv")
 
 [node name="Ball" parent="." instance=ExtResource("2_yqjtg")]
@@ -144,53 +146,80 @@ stream = ExtResource("6_p57ef")
 [node name="ScoreboardBG" type="TextureRect" parent="UI"]
 light_mask = 4
 visibility_layer = 4
-offset_left = 655.0
-offset_top = 31.0
-offset_right = 2191.0
-offset_bottom = 1055.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -768.0
+offset_top = -512.0
+offset_right = 768.0
+offset_bottom = 512.0
 scale = Vector2(0.298335, 0.302808)
 texture = ExtResource("9_vtaks")
 
 [node name="ScoreLeft" type="Label" parent="UI"]
-offset_left = 773.0
-offset_top = 138.0
-offset_right = 873.0
-offset_bottom = 275.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -68.5
+offset_bottom = 68.5
 theme_override_fonts/font = ExtResource("10_kvpfn")
 theme_override_font_sizes/font_size = 100
 text = "0"
 
 [node name="ScoreRight" type="Label" parent="UI"]
-offset_left = 906.0
-offset_top = 136.0
-offset_right = 1006.0
-offset_bottom = 273.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_top = -68.5
+offset_right = 100.0
+offset_bottom = 68.5
 theme_override_fonts/font = ExtResource("10_kvpfn")
 theme_override_font_sizes/font_size = 100
 text = "0"
 
 [node name="TimeScoreboard" parent="UI" instance=ExtResource("14_timer")]
-offset_left = 842.0
-offset_top = -23.0
-offset_right = 1378.0
-offset_bottom = 1001.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -268.0
+offset_top = -512.0
+offset_right = 268.0
+offset_bottom = 512.0
+grow_horizontal = 2
+grow_vertical = 2
 scale = Vector2(0.738959, 0.503504)
 controller_path = NodePath("../..")
 
 [node name="TextureRect" type="TextureRect" parent="UI"]
-offset_left = 1712.0
-offset_top = 74.0
-offset_right = 3248.0
-offset_bottom = 1098.0
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -768.0
+offset_top = -512.0
+offset_right = 768.0
 scale = Vector2(0.02, 0.02)
 texture = ExtResource("13_kvuet")
 
 [node name="MessageLabel" type="Label" parent="UI"]
 visible = false
-offset_left = 761.0
-offset_top = 289.0
-offset_right = 801.0
-offset_bottom = 312.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
 
 [node name="SpawnPoint" type="Marker2D" parent="."]
 position = Vector2(880, 529)
