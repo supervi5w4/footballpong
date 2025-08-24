@@ -28,14 +28,14 @@ var _current_position: Vector2 = Vector2.ZERO
 func _ready() -> void:
 	# Ждем один кадр, чтобы viewport был инициализирован
 	await get_tree().process_frame
-	_calculate_field_scale()
+	#_calculate_field_scale()
 
 func set_field_sprite(sprite: Sprite2D) -> void:
 	"""Устанавливает спрайт поля для управления"""
 	field_sprite = sprite
 	if field_sprite and field_sprite.texture:
 		_field_texture_size = field_sprite.texture.get_size()
-		_calculate_field_scale()
+		#_calculate_field_scale()
 
 func _notification(what: int) -> void:
 	"""Обработка системных уведомлений"""

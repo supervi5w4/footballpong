@@ -36,6 +36,16 @@ const BASE_PLAYER_PADDLE_POS := Vector2(276, 531)
 const BASE_AI_PADDLE_POS := Vector2(1486, 529)
 
 # --- Узлы сцены ---
+#@onready var ball: RigidBody2D = $CanvasLayer/Ball
+#@onready var player_paddle: CharacterBody2D = $CanvasLayer/PlayerPaddle
+#@onready var ai_paddle: CharacterBody2D = $CanvasLayer/AiPaddle
+#@onready var field: Sprite2D = $CanvasLayer/Field
+#@onready var walls: Node2D = $CanvasLayer/Walls
+#@onready var goal_area_right: Area2D = $CanvasLayer/GoalAreaRight
+#@onready var goal_area_left: Area2D = $CanvasLayer/GoalAreaLeft
+#@onready var spawn_point: Marker2D = $CanvasLayer/SpawnPoint
+#@onready var field_controller: FieldController = $CanvasLayer/FieldController
+
 @onready var ball: RigidBody2D = $Ball
 @onready var player_paddle: CharacterBody2D = $PlayerPaddle
 @onready var ai_paddle: CharacterBody2D = $AiPaddle
@@ -56,6 +66,7 @@ var _viewport_size: Vector2 = Vector2.ZERO
 var _scale_factor: Vector2 = Vector2.ONE
 
 func _ready() -> void:
+	$Camera2D.make_current()
 	# Ждем один кадр для инициализации viewport
 	await get_tree().process_frame
 	
@@ -65,11 +76,11 @@ func _ready() -> void:
 		field_controller.field_scaled.connect(_on_field_scaled)
 	
 	# Вычисляем размеры viewport и масштаб
-	_calculate_viewport_scale()
+	#_calculate_viewport_scale()
 	
 	# Позиционируем все элементы относительно нового размера
-	_position_field_elements()
-	_position_ui_elements()
+	#_position_field_elements()
+	#_position_ui_elements()
 	
 	# Сбрасываем счёт в начале игры
 	Score.reset_score()
