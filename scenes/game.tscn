@@ -54,43 +54,14 @@ anchor_left = 0.233333
 anchor_top = 0.0259259
 anchor_right = 0.34
 anchor_bottom = 0.215556
-offset_left = 312.0
-offset_top = 462.0
-offset_right = 507.2
-offset_bottom = 357.2
+offset_left = 214.001
+offset_top = -42.0
+offset_right = 1206.0
+offset_bottom = 944.074
 grow_horizontal = 2
 grow_vertical = 2
-scale = Vector2(0.2, 0.2)
+scale = Vector2(0.12, 0.12)
 texture = ExtResource("9_vtaks")
-metadata/_edit_use_anchors_ = true
-
-[node name="ScoreLeft" type="Label" parent="UI"]
-anchors_preset = -1
-anchor_left = 0.442708
-anchor_top = 0.436574
-anchor_right = 0.494792
-anchor_bottom = 0.563426
-offset_left = 10.0
-offset_right = -10.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_fonts/font = ExtResource("10_kvpfn")
-theme_override_font_sizes/font_size = 100
-text = "0"
-
-[node name="ScoreRight" type="Label" parent="UI"]
-anchors_preset = -1
-anchor_left = 0.505208
-anchor_top = 0.436574
-anchor_right = 0.557292
-anchor_bottom = 0.563426
-offset_left = 10.0001
-offset_right = -10.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_fonts/font = ExtResource("10_kvpfn")
-theme_override_font_sizes/font_size = 100
-text = "0"
 metadata/_edit_use_anchors_ = true
 
 [node name="TimeScoreboard" parent="UI" instance=ExtResource("14_timer")]
@@ -99,22 +70,24 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -150.0
-offset_top = -100.0
-offset_right = 150.0
-offset_bottom = 100.0
+offset_left = 59.0
+offset_top = -98.0
+offset_right = 359.0
+offset_bottom = 102.0
 grow_horizontal = 2
 grow_vertical = 2
 controller_path = NodePath("../..")
 
 [node name="TextureRect" type="TextureRect" parent="UI"]
+visible = false
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = -50.0
-offset_top = -50.0
-offset_right = 50.0
-grow_horizontal = 2
+offset_left = -229.0
+offset_top = -996.0
+offset_right = 1307.0
+offset_bottom = 28.0
+grow_vertical = 0
 scale = Vector2(0.1, 0.1)
 texture = ExtResource("13_kvuet")
 
@@ -130,6 +103,39 @@ offset_top = -11.5
 offset_right = 20.0
 offset_bottom = 11.5
 
+[node name="ScoreRight" type="Label" parent="UI"]
+anchors_preset = -1
+anchor_left = 0.505208
+anchor_top = 0.436574
+anchor_right = 0.557292
+anchor_bottom = 0.563426
+offset_left = 42.0006
+offset_top = -331.5
+offset_right = 41.9994
+offset_bottom = -331.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("10_kvpfn")
+theme_override_font_sizes/font_size = 100
+text = "0"
+metadata/_edit_use_anchors_ = true
+
+[node name="ScoreLeft" type="Label" parent="UI"]
+anchors_preset = -1
+anchor_left = 0.442708
+anchor_top = 0.436574
+anchor_right = 0.494792
+anchor_bottom = 0.563426
+offset_left = 268.001
+offset_top = -332.5
+offset_right = 267.999
+offset_bottom = -332.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("10_kvpfn")
+theme_override_font_sizes/font_size = 100
+text = "0"
+
 [node name="FieldController" type="Node" parent="."]
 script = ExtResource("1_field_controller")
 
@@ -139,13 +145,14 @@ scale = Vector2(1.375, 1.375)
 texture = ExtResource("1_uwrxv")
 
 [node name="Ball" parent="." instance=ExtResource("2_yqjtg")]
-position = Vector2(885, 528)
+position = Vector2(958, 663)
 rotation = -0.523598
 can_sleep = false
 
 [node name="Walls" type="Node2D" parent="."]
 
 [node name="WallTop" type="StaticBody2D" parent="Walls"]
+position = Vector2(2, 74)
 physics_material_override = ExtResource("3_iywne")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallTop"]
@@ -153,6 +160,7 @@ position = Vector2(956, 132)
 shape = SubResource("RectangleShape2D_yqjtg")
 
 [node name="WallBottom" type="StaticBody2D" parent="Walls"]
+position = Vector2(-5, 5)
 physics_material_override = ExtResource("3_iywne")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallBottom"]
@@ -160,6 +168,7 @@ position = Vector2(967, 1133)
 shape = SubResource("RectangleShape2D_lnu2h")
 
 [node name="WallLeft" type="StaticBody2D" parent="Walls"]
+position = Vector2(-4, 1)
 physics_material_override = ExtResource("3_iywne")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallLeft"]
@@ -167,6 +176,7 @@ position = Vector2(33.75, 620.25)
 shape = SubResource("RectangleShape2D_lbhrr")
 
 [node name="WallRight" type="StaticBody2D" parent="Walls"]
+position = Vector2(0, 15)
 physics_material_override = ExtResource("3_iywne")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallRight"]
@@ -174,6 +184,7 @@ position = Vector2(1887, 619)
 shape = SubResource("RectangleShape2D_iywne")
 
 [node name="WallRight2" type="StaticBody2D" parent="Walls"]
+position = Vector2(11, 7)
 physics_material_override = ExtResource("3_iywne")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallRight2"]
@@ -181,6 +192,7 @@ position = Vector2(1818, 866)
 shape = SubResource("RectangleShape2D_p57ef")
 
 [node name="WallRight3" type="StaticBody2D" parent="Walls"]
+position = Vector2(13, -2)
 physics_material_override = ExtResource("3_iywne")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallRight3"]
@@ -188,6 +200,7 @@ position = Vector2(1816, 416)
 shape = SubResource("RectangleShape2D_u5sy4")
 
 [node name="WallLeft2" type="StaticBody2D" parent="Walls"]
+position = Vector2(-1, 2)
 physics_material_override = ExtResource("3_iywne")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallLeft2"]
@@ -195,6 +208,7 @@ position = Vector2(85.875, 413)
 shape = SubResource("RectangleShape2D_gee14")
 
 [node name="WallLeft3" type="StaticBody2D" parent="Walls"]
+position = Vector2(-4, 5)
 physics_material_override = ExtResource("3_iywne")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallLeft3"]
@@ -202,10 +216,10 @@ position = Vector2(86, 867.5)
 shape = SubResource("RectangleShape2D_0tnpc")
 
 [node name="PlayerPaddle" parent="." instance=ExtResource("4_lbhrr")]
-position = Vector2(276, 531)
+position = Vector2(293, 656)
 
 [node name="AiPaddle" parent="." instance=ExtResource("5_iywne")]
-position = Vector2(1486, 529)
+position = Vector2(1612, 650)
 skill = 0.0
 behaviour_style = "defensive"
 ball_path = NodePath("../Ball")
@@ -232,7 +246,7 @@ shape = SubResource("RectangleShape2D_vtaks")
 stream = ExtResource("6_p57ef")
 
 [node name="SpawnPoint" type="Marker2D" parent="."]
-position = Vector2(880, 529)
+position = Vector2(957, 660)
 gizmo_extents = 19.0
 
 [node name="Camera2D" type="Camera2D" parent="."]
