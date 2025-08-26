@@ -1,6 +1,7 @@
 [gd_scene load_steps=23 format=3 uid="uid://8wkf1f060q6x"]
 
 [ext_resource type="Script" path="res://scenes/tournament_game.gd" id="1_gee14"]
+[ext_resource type="Script" path="res://scenes/field_controller.gd" id="1_field_controller"]
 [ext_resource type="Script" path="res://scenes/tournament_controller.gd" id="1_tournament_controller"]
 [ext_resource type="Texture2D" uid="uid://37rfb12sxmf4" path="res://assets/gfx/field.png" id="2_uwrxv"]
 [ext_resource type="PackedScene" uid="uid://50dwkkpv3435" path="res://scenes/ball.tscn" id="3_yqjtg"]
