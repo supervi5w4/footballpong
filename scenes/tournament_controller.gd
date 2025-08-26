@@ -41,7 +41,8 @@ func _ready() -> void:
 
 	# --- Инициализация таймера матча ---
 	if time_scoreboard:
-		await time_scoreboard.ready
+		if not time_scoreboard.is_node_ready():
+			await time_scoreboard.ready
 		match_timer = time_scoreboard.get_match_timer()
 		if match_timer:
 			match_timer.period_changed.connect(_on_period_changed)
