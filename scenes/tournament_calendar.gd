@@ -253,7 +253,7 @@ func _on_play_next_pressed() -> void:
 		if not bool(m["played"]) and (m["home"] == player or m["away"] == player):
 			print("Календарь: Найден матч ", match_idx, " - ", m["home"], " vs ", m["away"])
 			Score.current_match = match_idx
-			get_tree().change_scene_to_file("res://scenes/tournament_game.tscn")
+			get_tree().change_scene_to_file("res://scenes/game.tscn")
 			return
 	
 	print("Календарь: Матчи игрока в текущем раунде не найдены, проверяем переход к следующему раунду")

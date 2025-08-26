@@ -70,6 +70,19 @@ func _ready() -> void:
 	# Ждем один кадр для инициализации viewport
 	await get_tree().process_frame
 	
+	# Проверяем режим турнира
+	var in_tournament: bool = (Score.current_match >= 0)
+	
+	# Если в турнирном режиме, создаем контроллер турнира
+	if in_tournament:
+		var tournament_controller = preload("res://scenes/tournament_controller.gd").new()
+		tournament_controller.name = "TournamentController"
+		add_child(tournament_controller)
+		
+		# Указываем time_scoreboard на контроллер турнира
+		if time_scoreboard:
+			time_scoreboard.controller = tournament_controller
+	
 	# Инициализируем контроллер поля
 	if field_controller and field:
 		field_controller.set_field_sprite(field)
@@ -89,9 +102,6 @@ func _ready() -> void:
 	
 	# Подключаемся к сигналу обновления счёта
 	Score.score_changed.connect(_update_scoreboard)
-	
-	# Проверяем, используется ли режим турнира (есть отдельный контроллер)
-	var in_tournament: bool = (get_node_or_null("TournamentController") != null)
 	
 	# Подключаемся к сигналам таймера только в обычном режиме
 	if time_scoreboard:

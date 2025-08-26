@@ -21,6 +21,8 @@ func _on_play_pressed() -> void:
 		YandexSDK.show_interstitial_ad()
 		# Ждем завершения показа рекламы
 		await YandexSDK.interstitial_ad
+	# Устанавливаем current_match в -1 для обычной игры
+	Score.current_match = -1
 	# Переход к игре
 	get_tree().change_scene_to_file("res://scenes/game.tscn")
 
