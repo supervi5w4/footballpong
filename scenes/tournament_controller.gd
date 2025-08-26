@@ -166,7 +166,8 @@ func _start_next_half() -> void:
 	
 	# Перезапускаем таймер
 	if time_scoreboard:
-		time_scoreboard._start_match_timer_only()
+		var timer := time_scoreboard.get_match_timer()
+		if timer: timer.start_match()
 	
 	print("Турнир: Матч запущен, тайм %d" % current_half)
 
