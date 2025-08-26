@@ -203,5 +203,8 @@ offset_bottom = 312.0
 position = Vector2(880, 529)
 gizmo_extents = 19.0
 
+[node name="Camera2D" type="Camera2D" parent="."]
+anchor_mode = 0
+
 [connection signal="body_entered" from="GoalAreaRight" to="GoalAreaRight" method="_on_body_entered"]
 [connection signal="body_entered" from="GoalAreaLeft" to="GoalAreaLeft" method="_on_body_entered"]
