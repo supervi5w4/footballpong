@@ -85,6 +85,7 @@ func _ready() -> void:
 	# Сбрасываем счёт в начале игры
 	Score.reset_score()
 	Score.player_on_left = true  # Игрок начинает слева
+	Score.current_half = 1  # Инициализируем первый тайм
 	
 	# Подключаемся к сигналу обновления счёта
 	Score.score_changed.connect(_update_scoreboard)
@@ -306,32 +307,38 @@ func _return_to_menu() -> void:
 func _on_first_half_ended() -> void:
 	print("Game: Первый тайм завершен, останавливаем игру")
 	
-	# Останавливаем мяч
+	# Выводим в лог защитников сторон и текущий счёт
+	var player_side = "слева" if Score.player_on_left else "справа"
+	var ai_side = "справа" if Score.player_on_left else "слева"
+	print("Game: Завершение первого тайма - Игрок защищает %s, ИИ защищает %s, счёт %d:%d" % [player_side, ai_side, Score.left, Score.right])
+	
+	# Замораживаем мяч
 	if ball:
 		ball.freeze = true
 	
-	# Показываем сообщение о паузе между таймами
+	# Ждем паузу между таймами (≈2 сек)
 	await get_tree().create_timer(2.0).timeout
 	
-	# Возвращаем мяч в центр и запускаем второй тайм
+	# Запускаем второй тайм
 	_start_second_half()
 
 func _start_second_half() -> void:
 	"""Запуск второго тайма с возвратом мяча в центр и сменой сторон"""
 	print("Game: Запуск второго тайма")
 	
-	# Размораживаем мяч перед сбросом
+	# Размораживаем мяч
 	if ball:
 		ball.freeze = false
 	
-	# Меняем стороны: игрок переходит на правую сторону
-	Score.player_on_left = false
+	# Устанавливаем новые настройки сторон и тайма
+	Score.player_on_left = false  # Игрок переходит на правую сторону
+	Score.current_half = 2  # Второй тайм
 	
-	# Переключаем флаги сторон для ракеток
+	# Переключаем флаги сторон для ракеток (игрок → правая, ИИ → левая)
 	if player_paddle and player_paddle.has_method("set_defends_right_side"):
-		player_paddle.defends_right_side = true
+		player_paddle.set_defends_right_side(true)
 	if ai_paddle and ai_paddle.has_method("set_defends_right_side"):
-		ai_paddle.defends_right_side = false
+		ai_paddle.set_defends_right_side(false)
 	
 	# Меняем стартовые позиции ракеток местами
 	if player_paddle and ai_paddle:
@@ -346,11 +353,10 @@ func _start_second_half() -> void:
 	# Сбрасываем позиции ракеток на новые места
 	if player_paddle and player_paddle.has_method("reset_position"):
 		player_paddle.reset_position()
-
 	if ai_paddle and ai_paddle.has_method("reset_position"):
 		ai_paddle.reset_position()
 	
-	# Мяч уже в центре после заморозки, просто запускаем его
+	# Телепортируем мяч в центр и запускаем подачу
 	if ball:
 		ball._teleport_to_spawn()
 		ball._serve()

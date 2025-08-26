@@ -19,8 +19,9 @@ const SKILL_MIN := 0.10
 const SKILL_MAX := 0.99
 
 func _ready() -> void:
-	# --- Сброс счёта ---
+	# --- Сброс счёта и инициализация тайма ---
 	Score.reset_score()
+	Score.current_half = 1
 
 	# --- Определяем позицию игрока на поле ---
 	var p_paddle := game_node.get_node_or_null("PlayerPaddle")
@@ -32,9 +33,9 @@ func _ready() -> void:
 		
 		# Инициализируем флаги сторон для ракеток
 		if p_paddle.has_method("set_defends_right_side"):
-			p_paddle.defends_right_side = not Score.player_on_left
+			p_paddle.set_defends_right_side(not Score.player_on_left)
 		if a_paddle.has_method("set_defends_right_side"):
-			a_paddle.defends_right_side = Score.player_on_left
+			a_paddle.set_defends_right_side(Score.player_on_left)
 	else:
 		Score.player_on_left = true  # запасной вариант
 
@@ -79,6 +80,8 @@ func _ready() -> void:
 		Score.score_changed.connect(_on_score_changed)
 
 	current_half = 0
+	# Синхронизируем с Score.current_half
+	Score.current_half = 1
 	# Запускаем матч после завершения _ready всех узлов, чтобы
 	# TimeScoreboard успел создать свой MatchTimer. Иначе при
 	# прямом вызове _start_next_half() match_timer ещё не
@@ -126,10 +129,18 @@ func _on_period_changed(period: int) -> void:
 	if period == 2 and current_half == 1:
 		# Второй тайм начался
 		current_half = 2
+		# Синхронизируем с Score.current_half
+		Score.current_half = 2
 
 func _on_first_half_ended() -> void:
 	"""Обработчик окончания первого тайма"""
 	print("Турнир: Первый тайм завершен")
+	
+	# Выводим лог с защитниками и счётом
+	var player_side = "слева" if Score.player_on_left else "справа"
+	var ai_side = "справа" if Score.player_on_left else "слева"
+	print("Турнир: Завершение первого тайма - Игрок защищает %s, ИИ защищает %s, счёт %d:%d" % [player_side, ai_side, Score.left, Score.right])
+	
 	await _on_half_finished()
 
 func _on_match_ended() -> void:
@@ -143,15 +154,21 @@ func start_match() -> void:
 
 func _start_next_half() -> void:
 	current_half += 1
+	# Обновляем Score.current_half
+	Score.current_half = current_half
+	
+	# Скрываем сообщения
 	if message_label:
 		message_label.visible = false
+	
+	# Перезапускаем раунд
 	game_node.call("reset_round")
 	
-	# Запускаем матч (только таймер, не вызываем контроллер)
+	# Перезапускаем таймер
 	if time_scoreboard:
 		time_scoreboard._start_match_timer_only()
 	
-	print("Турнир: Матч запущен")
+	print("Турнир: Матч запущен, тайм %d" % current_half)
 
 func _on_half_finished() -> void:
 	if current_half == 1:
@@ -180,22 +197,23 @@ func _start_second_half() -> void:
 	if message_label:
 		message_label.visible = false
 	
-	# Размораживаем мяч перед сбросом
+	# Размораживаем мяч
 	var ball = game_node.get_node_or_null("Ball")
 	if ball:
 		ball.freeze = false
 	
-	# Меняем стороны: игрок переходит на правую сторону
-	Score.player_on_left = false
+	# Устанавливаем новые настройки сторон и тайма
+	Score.player_on_left = false  # Игрок переходит на правую сторону
+	Score.current_half = 2  # Второй тайм
 	
-	# Переключаем флаги сторон для ракеток
+	# Переключаем флаги сторон для ракеток (игрок → правая, ИИ → левая)
 	var player_paddle = game_node.get_node_or_null("PlayerPaddle")
 	var ai_paddle = game_node.get_node_or_null("AiPaddle")
 	
 	if player_paddle and player_paddle.has_method("set_defends_right_side"):
-		player_paddle.defends_right_side = true
+		player_paddle.set_defends_right_side(true)
 	if ai_paddle and ai_paddle.has_method("set_defends_right_side"):
-		ai_paddle.defends_right_side = false
+		ai_paddle.set_defends_right_side(false)
 	
 	# Меняем стартовые позиции ракеток местами
 	if player_paddle and ai_paddle:
@@ -206,6 +224,7 @@ func _start_second_half() -> void:
 	# Запускаем второй тайм
 	if time_scoreboard:
 		time_scoreboard.start_second_half()
+	
 	current_half = 2
 	
 	# Сбрасываем позиции ракеток на новые места
@@ -220,7 +239,10 @@ func _start_second_half() -> void:
 		ball._teleport_to_spawn()
 		ball._serve()
 	
-	print("Турнир: Второй тайм начался, стороны поменялись")
+	# Логируем начало второго тайма
+	var player_side = "слева" if Score.player_on_left else "справа"
+	var ai_side = "справа" if Score.player_on_left else "слева"
+	print("Турнир: Второй тайм начался - Игрок защищает %s, ИИ защищает %s" % [player_side, ai_side])
 
 func _finalize_match() -> void:
 	# Показываем надпись "Матч окончен" на 3 секунды
