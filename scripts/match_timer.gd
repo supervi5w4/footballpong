@@ -49,6 +49,9 @@ func start_match() -> void:
 	_is_running = true
 	_is_paused = false
 	_last_displayed_seconds = -1
+	# Синхронизируем с Score.current_half
+	if Score:
+		Score.current_half = 1
 	_update_display_time()
 	print("Match started - Period 1")
 
@@ -57,6 +60,9 @@ func start_second_half() -> void:
 	_is_running = true
 	_is_paused = false
 	_last_displayed_seconds = -1
+	# Синхронизируем с Score.current_half
+	if Score:
+		Score.current_half = 2
 	period_changed.emit(_current_period)
 	print("Second half started")
 
@@ -82,6 +88,9 @@ func reset_match() -> void:
 	display_seconds = 0
 	display_period = 1
 	_last_displayed_seconds = -1
+	# Синхронизируем с Score.current_half
+	if Score:
+		Score.current_half = 1
 	time_updated.emit(display_minutes, display_seconds, display_period)
 	print("Match reset")
 
