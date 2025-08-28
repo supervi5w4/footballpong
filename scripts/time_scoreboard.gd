@@ -48,6 +48,7 @@ func start_match() -> void:
 	print("TimeScoreboard: Запуск матча")
 	_call_start_match()
 	match_timer.start_match()
+	Audio.play("Sudia", Vector2.ZERO, -6.0, 0.0, 0.0, 0.8)
 
 func _start_match_timer_only() -> void:
 	"""Запуск только таймера матча (без вызова контроллера)"""
@@ -64,6 +65,7 @@ func resume_match() -> void:
 
 func stop_match() -> void:
 	"""Остановка матча"""
+	Audio.play("Sudia", Vector2.ZERO, -6.0, 0.0, 0.0, 0.8)
 	match_timer.stop_match()
 
 func reset_match() -> void:
@@ -88,6 +90,7 @@ func _on_first_half_ended() -> void:
 	"""Обработчик окончания первого тайма"""
 	print("TimeScoreboard: Первый тайм завершен")
 	_update_display()
+	Audio.play("Sudia", Vector2.ZERO, -6.0, 0.0, 0.0, 0.8)
 
 func _update_display() -> void:
 	"""Обновление отображения времени"""

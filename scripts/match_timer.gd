@@ -167,3 +167,18 @@ func is_match_paused() -> bool:
 
 func get_current_period() -> int:
 	return _current_period
+
+func get_remaining_time() -> float:
+	"""Возвращает оставшееся время матча в секундах"""
+	if not _is_running:
+		return 0.0
+	
+	# Общее время матча в игровых секундах
+	var total_match_time = GAME_MINUTES_PER_PERIOD * 2 * 60.0  # 90 минут = 5400 секунд
+	
+	# Прошедшее время в игровых секундах
+	var elapsed_game_time = _real_time_elapsed * SPEED_MULTIPLIER
+	
+	# Оставшееся время
+	var remaining = total_match_time - elapsed_game_time
+	return max(0.0, remaining)
