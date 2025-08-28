@@ -103,18 +103,60 @@ func _exit_tree() -> void:
 func _apply_ai_tuning() -> void:
 	if ai == null:
 		return
-	if ai.skill > 0.9:
-		ai.behaviour_style = "aggressive"
-		ai.max_bounces = 5
-		ai.aggression = 0.8
-	elif ai.skill > 0.8:
-		ai.behaviour_style = "balanced"
-		ai.max_bounces = 3
-		ai.aggression = 0.5
+	
+	# Получаем информацию о сопернике
+	var opponent_name: String = ""
+	var idx: int = Score.current_match
+	if idx >= 0 and idx < Score.matches.size():
+		var m: Dictionary = Score.matches[idx]
+		var home: String = String(m["home"])
+		var player_is_home: bool = (home == Score.player_team_name)
+		opponent_name = String(m["away"]) if player_is_home else String(m["home"])
+	
+	# Пытаемся получить ai_style из команды соперника
+	var opponent: Dictionary = Score.get_team_dict(opponent_name)
+	var ai_style: String = opponent.get("ai_style", "")
+	
+	# Базовые значения для настройки
+	var base_aggression: float = 0.5
+	var base_max_bounces: int = 3
+	
+	# Если ai_style задан, используем его как базу
+	if not ai_style.is_empty():
+		ai.behaviour_style = ai_style
+		# Настраиваем базовые параметры в зависимости от стиля
+		match ai_style:
+			"aggressive":
+				base_aggression = 0.8
+				base_max_bounces = 5
+			"balanced":
+				base_aggression = 0.5
+				base_max_bounces = 3
+			"defensive":
+				base_aggression = 0.3
+				base_max_bounces = 2
 	else:
-		ai.behaviour_style = "defensive"
-		ai.max_bounces = 2
-		ai.aggression = 0.3
+		# Если ai_style отсутствует, используем логику на основе skill
+		if ai.skill > 0.9:
+			ai.behaviour_style = "aggressive"
+			base_aggression = 0.8
+			base_max_bounces = 5
+		elif ai.skill > 0.8:
+			ai.behaviour_style = "balanced"
+			base_aggression = 0.5
+			base_max_bounces = 3
+		else:
+			ai.behaviour_style = "defensive"
+			base_aggression = 0.3
+			base_max_bounces = 2
+	
+	# Применяем базовые настройки, но не перезаписываем динамически измененные значения
+	ai.max_bounces = base_max_bounces
+	
+	# Устанавливаем aggression только если она не была изменена динамически
+	# (проверяем, что она близка к базовому значению или меньше)
+	if abs(ai.aggression - base_aggression) < 0.1 or ai.aggression < base_aggression:
+		ai.aggression = base_aggression
 
 func _on_score_changed(left: int, right: int) -> void:
 	if ai == null:
@@ -122,6 +164,48 @@ func _on_score_changed(left: int, right: int) -> void:
 	# Параметры left/right уже отражают голы игрока и соперника
 	var diff: int = left - right
 	ai.skill = clamp(base_skill + diff * 0.1, SKILL_MIN, SKILL_MAX)
+	_apply_ai_tuning()
+
+func _process(delta: float) -> void:
+	"""Вызывается каждый кадр для обновления сложности ИИ"""
+	_update_ai_difficulty(delta)
+
+func _update_ai_difficulty(delta_time: float) -> void:
+	"""Динамически изменяет сложность ИИ на основе времени и счета"""
+	if ai == null or match_timer == null:
+		return
+	
+	# Получаем оставшееся время
+	var remaining_time = match_timer.get_remaining_time()
+	
+	# Получаем текущий счет
+	var player_score = Score.left
+	var ai_score = Score.right
+	var score_diff = player_score - ai_score
+	
+	# Константы для настройки
+	const TIME_CRITICAL = 300.0  # 5 минут до конца матча
+	const SCORE_ADVANTAGE = 2    # Разница в 2 гола считается преимуществом
+	const SKILL_BOOST = 0.15     # Увеличение skill при проигрыше
+	const AGGRESSION_BOOST = 0.2 # Увеличение aggression при проигрыше
+	const AGGRESSION_REDUCE = 0.1 # Уменьшение aggression при выигрыше
+	
+	# Если ИИ проигрывает и времени мало
+	if score_diff > 0 and remaining_time < TIME_CRITICAL:
+		# Увеличиваем skill и aggression
+		ai.skill = clamp(ai.skill + SKILL_BOOST * delta_time, SKILL_MIN, SKILL_MAX)
+		ai.aggression = clamp(ai.aggression + AGGRESSION_BOOST * delta_time, 0.0, 1.0)
+		print("ИИ активирован: skill=%.2f, aggression=%.2f (время: %.1f, счет: %d:%d)" % 
+			  [ai.skill, ai.aggression, remaining_time, player_score, ai_score])
+	
+	# Если ИИ выигрывает с запасом
+	elif score_diff < -SCORE_ADVANTAGE:
+		# Снижаем aggression для баланса
+		ai.aggression = clamp(ai.aggression - AGGRESSION_REDUCE * delta_time, 0.0, 1.0)
+		print("ИИ снижает агрессию: aggression=%.2f (счет: %d:%d)" % 
+			  [ai.aggression, player_score, ai_score])
+	
+	# Применяем настройки стиля
 	_apply_ai_tuning()
 
 func _on_period_changed(period: int) -> void:

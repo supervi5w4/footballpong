@@ -16,6 +16,7 @@ class_name AiPaddle
 @export_range(0.0, 1.0, 0.01) var skill: float = 0.85
 @export_enum("aggressive", "balanced", "defensive") var behaviour_style: String = "balanced"
 @export_range(0.0, 1.0, 0.01) var aggression: float = 0.5  # 0 — сдержанно, 1 — навязчиво
+@export_range(0.0, 2.0, 0.1) var spin_influence: float = 1.0  # Влияние спина на предсказание (0 = без спина, 2 = сильное влияние)
 
 @export var ball_path: NodePath
 @export var player_path: NodePath
@@ -56,11 +57,17 @@ var _target_pos: Vector2 = Vector2.ZERO
 var _smooth_target_pos: Vector2 = Vector2.ZERO  # Плавная цель для движения
 var _time_to_next_think: float = 0.0
 var _fake_timer: float = 0.0
+var _direction_change_delay: float = 0.0  # Задержка при смене направления для низких навыков
 var start_pos: Vector2 = Vector2.ZERO
 var _is_first_hit: bool = true
 var _smooth_factor: float = 0.15  # Фактор плавности (0.1 = очень плавно, 0.3 = быстро)
 var _game_node: Node = null
 var _scale_factor: Vector2 = Vector2.ONE
+
+# ---------------- Player Shot History ----------------
+var player_shot_history: Array[float] = []  # История Y-позиций ударов игрока
+const MAX_SHOT_HISTORY: int = 5  # Максимальная длина истории
+const MIN_SHOT_HISTORY: int = 1  # Минимальная длина истории для низких навыков
 
 # ---------------- Dynamic Field Properties ----------------
 func get_field_size() -> Vector2:
@@ -116,7 +123,38 @@ func reset_position() -> void:
 	_state = State.DEFEND
 	_time_to_next_think = 0.0
 	_fake_timer = 0.0
+	_direction_change_delay = 0.0  # Сбрасываем задержку смены направления
 	_is_first_hit = true
+	# Очищаем историю ударов при сбросе позиции
+	player_shot_history.clear()
+
+# ---------------- Player Shot History Functions ----------------
+func record_player_shot() -> void:
+	"""Записывает Y-позицию мяча при ударе игрока"""
+	if _ball:
+		player_shot_history.append(_ball.global_position.y)
+		
+		# Ограничиваем длину истории в зависимости от навыков
+		var max_history_length = MIN_SHOT_HISTORY if skill < 0.5 else MAX_SHOT_HISTORY
+		
+		# Удаляем старые записи, если превышен лимит
+		while player_shot_history.size() > max_history_length:
+			player_shot_history.pop_front()
+
+func get_average_shot_position() -> float:
+	"""Возвращает среднее значение Y-позиций из истории ударов"""
+	if player_shot_history.is_empty():
+		return 0.0
+	
+	var sum: float = 0.0
+	for shot_y in player_shot_history:
+		sum += shot_y
+	
+	return sum / player_shot_history.size()
+
+func should_use_shot_history() -> bool:
+	"""Определяет, следует ли использовать историю ударов"""
+	return skill > 0.8 and player_shot_history.size() >= 2
 
 func set_start_position(pos: Vector2) -> void:
 	"""Устанавливает новую стартовую позицию ракетки"""
@@ -141,6 +179,7 @@ func _physics_process(delta: float) -> void:
 	_move()
 	_handle_ball_collisions()
 	_check_first_hit_reset()
+	_detect_player_shot()
 
 # ------------ Collision & First-hit helpers ------------
 func _handle_ball_collisions() -> void:
@@ -172,6 +211,34 @@ func _handle_ball_collisions() -> void:
 			if rb is Ball:
 				rb.boost_speed()
 
+# ------------ Player Shot Detection ------------
+func _detect_player_shot() -> void:
+	"""Определяет удар игрока и записывает его в историю"""
+	if not _ball or not _player:
+		return
+	
+	# Проверяем, что мяч движется от игрока к AI
+	var ball_velocity = _ball.linear_velocity
+	var ball_to_ai = (global_position - _ball.global_position).normalized()
+	var velocity_toward_ai = ball_velocity.dot(ball_to_ai) > 0.0
+	
+	# Проверяем, что мяч находится на стороне игрока
+	var ball_on_player_side = (defends_right_side and _ball.global_position.x < get_half_field_x()) or \
+							 (not defends_right_side and _ball.global_position.x > get_half_field_x())
+	
+	# Проверяем, что мяч достаточно близко к игроку (возможно, был удар)
+	var distance_to_player = _ball.global_position.distance_to(_player.global_position)
+	var close_to_player = distance_to_player < 150.0  # Уменьшили порог для более точного определения
+	
+	# Проверяем, что мяч имеет достаточную скорость (признак удара)
+	var ball_speed = ball_velocity.length()
+	var sufficient_speed = ball_speed > 400.0
+	
+	# Если мяч движется к AI с достаточной скоростью и был близко к игроку
+	if velocity_toward_ai and ball_on_player_side and close_to_player and sufficient_speed:
+		# Записываем удар
+		record_player_shot()
+
 func _check_first_hit_reset() -> void:
 	if not _is_first_hit:
 		var left_side: bool = _ball.global_position.x < get_half_field_x()
@@ -181,7 +248,8 @@ func _check_first_hit_reset() -> void:
 func _schedule_next_think() -> void:
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
 	var weak := 1.0 - skill
-	var react := REACTION_BASE + weak * weak * 0.4
+	# Увеличиваем реакцию в зависимости от (1 - skill)^2 для низких навыков
+	var react := REACTION_BASE + pow(weak, 2.0) * 0.6
 	react *= randf_range(0.8, 1.4) * float(style.error_mult) * (1.0 + weak)
 	# Увеличиваем интервал обновления для более плавного движения
 	react *= 1.5  # Увеличили интервал на 50%
@@ -265,7 +333,11 @@ func _think() -> void:
 				State.DEFEND:
 					_target_pos = _goal_pos(ball_pos)
 				State.INTERCEPT:
-					_target_pos = _predict_intercept()
+					# Используем предсказание с учётом спина для высоких навыков
+					if skill > 0.85:
+						_target_pos = _predict_intercept_with_spin()
+					else:
+						_target_pos = _predict_intercept()
 				State.BLOCK_PLAYER:
 					_target_pos = _block_pos(player_pos)
 				State.FAKE:
@@ -288,7 +360,23 @@ func _think() -> void:
 # ------------ Helper Calculations ---------------
 func _goal_pos(ball_pos: Vector2) -> Vector2:
 	var my_goal: Vector2 = get_goal_right() if defends_right_side else goal_left
-	return my_goal.lerp(ball_pos, 0.25)
+	var base_pos = my_goal.lerp(ball_pos, 0.25)
+	
+	# Используем историю ударов для корректировки позиции на высоких навыках
+	if should_use_shot_history():
+		var avg_shot_y = get_average_shot_position()
+		var field_size = get_field_size()
+		
+		# Смещаем целевую позицию в сторону среднего значения истории
+		var history_bias = 0.3  # Сила влияния истории (0.0 - 1.0)
+		var target_y = lerp(base_pos.y, avg_shot_y, history_bias)
+		
+		# Ограничиваем позицию в пределах поля
+		target_y = clamp(target_y, 80.0, field_size.y - 80.0)
+		
+		return Vector2(base_pos.x, target_y)
+	
+	return base_pos
 
 func _attack_pos(ball_pos: Vector2) -> Vector2:
 	var enemy_goal: Vector2 = goal_left if defends_right_side else get_goal_right()
@@ -301,7 +389,12 @@ func _block_pos(player_pos: Vector2) -> Vector2:
 	return Vector2(player_pos.x, clamp(player_pos.y + offset_y, 80.0, field_size.y - 80))
 
 func _high_speed_pos(ball_pos: Vector2) -> Vector2:
-	var intercept: Vector2 = _predict_intercept()
+	# Используем предсказание с учётом спина для высоких навыков
+	var intercept: Vector2
+	if skill > 0.85:
+		intercept = _predict_intercept_with_spin()
+	else:
+		intercept = _predict_intercept()
 	return intercept.lerp(_goal_pos(ball_pos), 0.5)
 
 func _edge_guard_pos(ball_pos: Vector2) -> Vector2:
@@ -389,6 +482,62 @@ func _predict_intercept() -> Vector2:
 		y = period - y
 	return Vector2(paddle_x, clamp(y, 80.0, height - 80.0))
 
+func _predict_intercept_with_spin() -> Vector2:
+	"""
+	Предсказывает точку перехвата мяча с учётом его спина (angular_velocity).
+	Спин влияет на траекторию мяча, создавая эффект Магнуса.
+	"""
+	var paddle_x: float = global_position.x
+	var p: Vector2 = _ball.global_position
+	var v: Vector2 = _ball.linear_velocity
+	var spin: float = _ball.angular_velocity
+	
+	if is_zero_approx(v.x):
+		return p
+	
+	var t: float = (paddle_x - p.x) / v.x
+	if t < 0.0:
+		return p
+	
+	# Базовое предсказание без спина
+	var base_y: float = p.y + v.y * t
+	
+	# Влияние спина на траекторию (эффект Магнуса)
+	# Спин создаёт боковую силу, перпендикулярную направлению движения
+	var spin_effect: float = 0.0
+	if not is_zero_approx(spin):
+		# Коэффициент влияния спина (зависит от размера мяча и плотности воздуха)
+		var spin_coefficient: float = 0.00015  # Настраиваемый коэффициент
+		
+		# Скорость мяча
+		var ball_speed: float = v.length()
+		
+		# Время полёта до ракетки
+		var flight_time: float = t
+		
+		# Эффект спина на вертикальное смещение
+		# Положительный спин (по часовой стрелке) отклоняет мяч вниз
+		# Отрицательный спин (против часовой стрелки) отклоняет мяч вверх
+		spin_effect = spin * spin_coefficient * ball_speed * flight_time * flight_time * 0.5
+		
+		# Применяем настройку влияния спина
+		spin_effect *= spin_influence
+	
+	# Финальная позиция с учётом спина
+	var final_y: float = base_y + spin_effect
+	
+	# Обработка отскоков от стен
+	var field_size = get_field_size()
+	var height: float = field_size.y
+	var period: float = height * 2.0
+	
+	# Применяем периодичность для отскоков
+	final_y = fposmod(final_y, period)
+	if final_y > height:
+		final_y = period - final_y
+	
+	return Vector2(paddle_x, clamp(final_y, 80.0, height - 80.0))
+
 func _dodge_pos(ball_pos: Vector2) -> Vector2:
 	var field_size = get_field_size()
 	var dir_y: float = sign(global_position.y - ball_pos.y)
@@ -429,8 +578,24 @@ func _move() -> void:
 	
 	dir = dir.normalized()
 	
-	# Уменьшаем джиттер для более плавного движения
-	var jitter_mag: float = (1.0 - skill) * 0.3  # Уменьшили с 0.5 до 0.3
+	# Задержка при смене направления для низких навыков
+	if skill < 0.5:
+		var current_dir = velocity.normalized() if not velocity.is_zero_approx() else Vector2.ZERO
+		var direction_change = current_dir.dot(dir) < 0.5  # Значительное изменение направления
+		
+		if direction_change and _direction_change_delay <= 0.0:
+			_direction_change_delay = lerp(0.1, 0.0, skill)  # Задержка от 0.1 до 0.0 секунд
+		
+		if _direction_change_delay > 0.0:
+			_direction_change_delay -= get_physics_process_delta_time()
+			# Во время задержки продолжаем движение в текущем направлении
+			if not velocity.is_zero_approx():
+				move_and_slide()
+				_clamp_x()
+				return
+	
+	# Усиливаем джиттер для низких навыков, уменьшаем для высоких
+	var jitter_mag: float = pow(1.0 - skill, 1.5) * 0.5  # Усилили джиттер для низких навыков
 	var speed_jitter: float = randf_range(1.0 - jitter_mag, 1.0 + jitter_mag)
 	var speed: float = BASE_SPEED * float(style.speed_mul) * speed_jitter * lerp(0.4, 1.0, skill)
 	

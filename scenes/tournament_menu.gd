@@ -4,38 +4,38 @@ extends Control
 @onready var team_name_input: LineEdit = %TeamNameInput
 @onready var start_btn: Button = %StartBtn
 
-# ► Пул 30 клубов с коэффициентом силы (0.10..1.00)
+# ► Пул 30 клубов с коэффициентом силы (0.10..1.00) и стилем ИИ
 const BOT_POOL: Array[Dictionary] = [
-	{"name":"Спартак", "strength": 1.00},
-	{"name":"ЦСКА", "strength": 0.97},
-	{"name":"Зенит", "strength": 0.94},
-	{"name":"Динамо Москва", "strength": 0.91},
-	{"name":"Динамо Киев", "strength": 0.88},
-	{"name":"Шахтёр", "strength": 0.84},
-	{"name":"Торпедо", "strength": 0.81},
-	{"name":"Локомотив", "strength": 0.78},
-	{"name":"Динамо Минск", "strength": 0.75},
-	{"name":"Днепр", "strength": 0.72},
-	{"name":"Нефтчи", "strength": 0.69},
-	{"name":"Кайрат", "strength": 0.66},
-	{"name":"Черноморец", "strength": 0.63},
-	{"name":"Арарат", "strength": 0.60},
-	{"name":"Пахтакор", "strength": 0.57},
-	{"name":"Заря", "strength": 0.53},
-	{"name":"Металлист", "strength": 0.50},
-	{"name":"Ростсельмаш", "strength": 0.47},
-	{"name":"Кубань", "strength": 0.44},
-	{"name":"Уралмаш", "strength": 0.41},
-	{"name":"СКА Ростов", "strength": 0.38},
-	{"name":"Таврия", "strength": 0.35},
-	{"name":"Жальгирис", "strength": 0.32},
-	{"name":"Крылья Советов", "strength": 0.29},
-	{"name":"Сокол", "strength": 0.26},
-	{"name":"Анжи", "strength": 0.22},
-	{"name":"Судостроитель", "strength": 0.19},
-	{"name":"Нистру", "strength": 0.16},
-	{"name":"Спартак Орёл", "strength": 0.13},
-	{"name":"Металлург Зап.", "strength": 0.10},
+	{"name":"Спартак", "strength": 1.00, "ai_style": "aggressive"},
+	{"name":"ЦСКА", "strength": 0.97, "ai_style": "aggressive"},
+	{"name":"Зенит", "strength": 0.94, "ai_style": "balanced"},
+	{"name":"Динамо Москва", "strength": 0.91, "ai_style": "balanced"},
+	{"name":"Динамо Киев", "strength": 0.88, "ai_style": "balanced"},
+	{"name":"Шахтёр", "strength": 0.84, "ai_style": "balanced"},
+	{"name":"Торпедо", "strength": 0.81, "ai_style": "defensive"},
+	{"name":"Локомотив", "strength": 0.78, "ai_style": "defensive"},
+	{"name":"Динамо Минск", "strength": 0.75, "ai_style": "defensive"},
+	{"name":"Днепр", "strength": 0.72, "ai_style": "balanced"},
+	{"name":"Нефтчи", "strength": 0.69, "ai_style": "defensive"},
+	{"name":"Кайрат", "strength": 0.66, "ai_style": "defensive"},
+	{"name":"Черноморец", "strength": 0.63, "ai_style": "defensive"},
+	{"name":"Арарат", "strength": 0.60, "ai_style": "defensive"},
+	{"name":"Пахтакор", "strength": 0.57, "ai_style": "defensive"},
+	{"name":"Заря", "strength": 0.53, "ai_style": "defensive"},
+	{"name":"Металлист", "strength": 0.50, "ai_style": "defensive"},
+	{"name":"Ростсельмаш", "strength": 0.47, "ai_style": "defensive"},
+	{"name":"Кубань", "strength": 0.44, "ai_style": "defensive"},
+	{"name":"Уралмаш", "strength": 0.41, "ai_style": "defensive"},
+	{"name":"СКА Ростов", "strength": 0.38, "ai_style": "defensive"},
+	{"name":"Таврия", "strength": 0.35, "ai_style": "defensive"},
+	{"name":"Жальгирис", "strength": 0.32, "ai_style": "defensive"},
+	{"name":"Крылья Советов", "strength": 0.29, "ai_style": "defensive"},
+	{"name":"Сокол", "strength": 0.26, "ai_style": "defensive"},
+	{"name":"Анжи", "strength": 0.22, "ai_style": "defensive"},
+	{"name":"Судостроитель", "strength": 0.19, "ai_style": "defensive"},
+	{"name":"Нистру", "strength": 0.16, "ai_style": "defensive"},
+	{"name":"Спартак Орёл", "strength": 0.13, "ai_style": "defensive"},
+	{"name":"Металлург Зап.", "strength": 0.10, "ai_style": "defensive"},
 ]
 
 func _ready() -> void:
@@ -48,6 +48,7 @@ func _augment_bot(bot: Dictionary) -> Dictionary:
 	d["points"] = 0
 	d["goals_for"] = 0
 	d["goals_against"] = 0
+	d["ai_style"] = d.get("ai_style", "balanced")  # Значение по умолчанию "balanced"
 	return d
 
 func _on_start_pressed() -> void:
@@ -76,7 +77,7 @@ func _on_start_pressed() -> void:
 
 	# 4) формируем teams_data
 	var teams_data: Array[Dictionary] = [
-		{"name": player_name, "strength": 0.90, "points": 0, "goals_for": 0, "goals_against": 0},
+		{"name": player_name, "strength": 0.90, "points": 0, "goals_for": 0, "goals_against": 0, "ai_style": "balanced"},
 		_augment_bot(b1),
 		_augment_bot(b2),
 		_augment_bot(b3),
