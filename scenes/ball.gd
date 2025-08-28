@@ -17,6 +17,9 @@ var _game_node: Node = null
 
 func _ready() -> void:
 	_rng.randomize()
+	contact_monitor = true
+	max_contacts_reported = 8
+	body_entered.connect(_on_body_entered)
 	_find_spawn()
 	_teleport_to_spawn()
 	_serve()
@@ -90,3 +93,14 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 		linear_velocity = linear_velocity.normalized() * speed_limit
 	elif v > 0.0 and v < MIN_SPEED:
 		linear_velocity = linear_velocity.normalized() * MIN_SPEED
+
+func _on_body_entered(body: Node) -> void:
+	if body is StaticBody2D and body.name.begins_with("Wall"):
+		Audio.play(
+			"bar",
+			global_position,
+			-12.0,  # немного тише удара о ракетку
+			0.02,   # совсем небольшой разброс питча
+			2.0,    # ±2 дБ
+			0.6     # кулдаун 0.6 c
+		)
