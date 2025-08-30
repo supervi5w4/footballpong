@@ -436,7 +436,7 @@ func _goal_pos(ball_pos: Vector2) -> Vector2:
 		var target_y = lerp(base_pos.y, avg_shot_y, history_bias)
 		
 		# Ограничиваем позицию в пределах поля
-	target_y = _clamp_y_to_field(target_y)
+		target_y = _clamp_y_to_field(target_y)
 		
 		return Vector2(base_pos.x, target_y)
 	
@@ -449,8 +449,9 @@ func _attack_pos(ball_pos: Vector2) -> Vector2:
 
 func _block_pos(player_pos: Vector2) -> Vector2:
 	var r := get_field_rect()
+	var field_size = get_field_size()
 	var offset_y: float = 120.0 if player_pos.y < field_size.y * 0.5 else -120.0
-return Vector2(player_pos.x, _clamp_y_to_field(player_pos.y + offset_y))
+	return Vector2(player_pos.x, _clamp_y_to_field(player_pos.y + offset_y))
 
 func _high_speed_pos(ball_pos: Vector2) -> Vector2:
 	# Используем предсказание с учётом спина для высоких навыков
