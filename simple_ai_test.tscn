@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://simple_ai_test"]
+
+[ext_resource type="Script" path="res://simple_ai_test.gd" id="1_test"]
+
+[node name="SimpleAiTest" type="Node"]
+script = ExtResource("1_test")
+
+[node name="Game" parent="." instance=ExtResource("res://scenes/game.tscn")]

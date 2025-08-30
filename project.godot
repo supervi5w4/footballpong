@@ -17,8 +17,11 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+LocaleManager="*res://i18n/locale_manager.gd"
 Score="*res://score_manager.gd"
 YandexSDK="*res://addons/yandex_games_sdk/yandex_sdk.gd"
+Audio="*res://scripts/audio_manager.gd"
+Music="*res://scripts/music_manager.gd"
 
 [display]
 
@@ -30,3 +33,9 @@ window/stretch/aspect="keep_height"
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/yandex_games_sdk/plugin.cfg")
+
+[locale]
+
+locale="en"
+translations=PackedStringArray("res://i18n/locale.en.translation", "res://i18n/locale.ru.translation")
+locale/fallbacks=PackedStringArray("en", "ru")

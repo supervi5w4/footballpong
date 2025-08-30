@@ -17,6 +17,7 @@ signal score_changed(left: int, right: int)
 
 var _left: int = 0
 var _right: int = 0
+var current_half: int = 1
 
 var left: int:
 	get: return _left
@@ -33,6 +34,7 @@ var right: int:
 func reset_score() -> void:
 	_left = 0
 	_right = 0
+	current_half = 1
 	score_changed.emit(_left, _right)
 
 func set_score(l: int, r: int) -> void:
@@ -63,11 +65,12 @@ func reset_tournament() -> void:
 		m["score"] = "— : —"
 	current_round = 0
 	current_match = -1
+	current_half = 1
 
 # ---------- 2) Турнирные данные ----------
-var ad_shown: bool = false
+var ads_shown_count: int = 0
 var player_team_name: String = ""
-var teams: Array[Dictionary] = []      # [{name, strength, points, goals_for, goals_against}]
+var teams: Array[Dictionary] = []      # [{name, strength, points, goals_for, goals_against, ai_style}]
 var matches: Array[Dictionary] = []    # [{home, away, played, score}]
 var rounds: Array[Array] = []          # [[match_idx...], ...]
 var current_round: int = 0
