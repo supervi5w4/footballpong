@@ -64,6 +64,13 @@ var _smooth_factor: float = 0.15  # Фактор плавности (0.1 = оч�
 var _game_node: Node = null
 var _scale_factor: Vector2 = Vector2.ONE
 
+# ---------------- Stuck Detection Variables ----------------
+var _stuck_timer: float = 0.0  # Таймер застревания у границ
+var _stuck_threshold: float = 0.5  # Порог времени застревания (0.5 секунды)
+var _stuck_margin: float = 80.0  # Расстояние от границы для определения застревания
+var _emergency_reset_timer: float = 0.0  # Таймер для аварийного сброса
+var _emergency_reset_threshold: float = 2.0  # Порог для аварийного сброса (2 секунды)
+
 # ---------------- Player Shot History ----------------
 var player_shot_history: Array[float] = []  # История Y-позиций ударов игрока
 const MAX_SHOT_HISTORY: int = 5  # Максимальная длина истории
@@ -72,16 +79,28 @@ const MIN_SHOT_HISTORY: int = 1  # Минимальная длина истор�
 # ---------------- Dynamic Field Properties ----------------
 func get_field_size() -> Vector2:
 	"""Возвращает текущий размер игрового поля из viewport"""
-	return get_viewport_rect().size
+	return get_field_rect().size
 
 func get_half_field_x() -> float:
 	"""Возвращает координату X центра поля"""
-	return get_field_size().x * 0.5
+	var r := get_field_rect()
+	return r.position.x + r.size.x * 0.5
 
 func get_goal_right() -> Vector2:
 	"""Возвращает позицию правых ворот"""
-	var field_size = get_field_size()
-	return Vector2(field_size.x, field_size.y * 0.5)
+	var r := get_field_rect()
+	return Vector2(r.position.x + r.size.x, r.position.y + r.size.y * 0.5)
+
+# Helper: real field rect and Y clamp
+func get_field_rect() -> Rect2:
+	if _game_node and _game_node.has_method("get_field_bounds"):
+		return _game_node.get_field_bounds()
+	var vp := get_viewport_rect()
+	return Rect2(vp.position, vp.size)
+
+func _clamp_y_to_field(y: float, margin: float = 80.0) -> float:
+	var r := get_field_rect()
+	return clamp(y, r.position.y + margin, r.position.y + r.size.y - margin)
 
 # ---------------- READY ----------------
 func _ready() -> void:
@@ -125,6 +144,9 @@ func reset_position() -> void:
 	_fake_timer = 0.0
 	_direction_change_delay = 0.0  # Сбрасываем задержку смены направления
 	_is_first_hit = true
+	# Сбрасываем таймеры застревания
+	_stuck_timer = 0.0
+	_emergency_reset_timer = 0.0
 	# Очищаем историю ударов при сбросе позиции
 	player_shot_history.clear()
 
@@ -199,6 +221,9 @@ func _handle_ball_collisions() -> void:
 				info["vel"].y += sign_dir * FIRST_HIT_DEVIATION_Y
 				_is_first_hit = false
 
+			# Улучшенная логика удара: направляем мяч к воротам противника
+			_improve_shot_direction(info, rb.global_position)
+
 			var miss := pow(1.0 - skill, 2.0)
 			if randf() < miss:
 				var angle_err := randf_range(-0.35, 0.35) * (1.0 + (1.0 - skill))
@@ -219,6 +244,35 @@ func _handle_ball_collisions() -> void:
 						3.0,     # ±3 дБ
 						0.5      # кулдаун 0.5 c
 					)
+
+func _improve_shot_direction(info: Dictionary, ball_pos: Vector2) -> void:
+	"""Улучшает направление удара, направляя мяч к воротам противника"""
+	# Определяем позицию ворот противника
+	var enemy_goal: Vector2
+	if defends_right_side:
+		enemy_goal = goal_left  # AI защищает правую сторону, цель - левые ворота
+	else:
+		enemy_goal = get_goal_right()  # AI защищает левую сторону, цель - правые ворота
+	
+	# Вычисляем вектор от мяча к воротам противника
+	var direction_to_goal = (enemy_goal - ball_pos).normalized()
+	
+	# Сохраняем исходную скорость мяча
+	var original_speed = info["vel"].length()
+	
+	# Заменяем направление на направление к воротам
+	info["vel"] = direction_to_goal * original_speed
+	
+	# Добавляем погрешность в зависимости от навыков
+	var error_angle = randf_range(-0.3, 0.3) * (1.0 - skill)  # Больше погрешности для слабого AI
+	info["vel"] = info["vel"].rotated(error_angle)
+	
+	# Улучшаем спин для усиления удара
+	var spin_strength = lerp(0.5, 1.5, skill)  # Сильный AI использует больше спина
+	var spin_direction = sign(info["vel"].y)  # Спин в направлении движения мяча
+	
+	# Устанавливаем спин для усиления удара
+	info["spin"] = spin_direction * spin_strength * 10.0  # Множитель 10 для заметного эффекта
 
 # ------------ Player Shot Detection ------------
 func _detect_player_shot() -> void:
@@ -382,7 +436,7 @@ func _goal_pos(ball_pos: Vector2) -> Vector2:
 		var target_y = lerp(base_pos.y, avg_shot_y, history_bias)
 		
 		# Ограничиваем позицию в пределах поля
-		target_y = clamp(target_y, 80.0, field_size.y - 80.0)
+	target_y = _clamp_y_to_field(target_y)
 		
 		return Vector2(base_pos.x, target_y)
 	
@@ -394,9 +448,9 @@ func _attack_pos(ball_pos: Vector2) -> Vector2:
 	return (ball_pos + Vector2(0, y_offset)).lerp(enemy_goal, 0.10)
 
 func _block_pos(player_pos: Vector2) -> Vector2:
-	var field_size = get_field_size()
+	var r := get_field_rect()
 	var offset_y: float = 120.0 if player_pos.y < field_size.y * 0.5 else -120.0
-	return Vector2(player_pos.x, clamp(player_pos.y + offset_y, 80.0, field_size.y - 80))
+return Vector2(player_pos.x, _clamp_y_to_field(player_pos.y + offset_y))
 
 func _high_speed_pos(ball_pos: Vector2) -> Vector2:
 	# Используем предсказание с учётом спина для высоких навыков
@@ -408,13 +462,16 @@ func _high_speed_pos(ball_pos: Vector2) -> Vector2:
 	return intercept.lerp(_goal_pos(ball_pos), 0.5)
 
 func _edge_guard_pos(ball_pos: Vector2) -> Vector2:
-	var field_size = get_field_size()
-	var target_y: float = 80.0 if ball_pos.y < field_size.y * 0.5 else field_size.y - 80.0
+	var r := get_field_rect()
+	var mid_y := r.position.y + r.size.y * 0.5
+	var top := r.position.y + 80.0
+	var bottom := r.position.y + r.size.y - 80.0
+	var target_y: float = top if ball_pos.y < mid_y else bottom
 	return Vector2(global_position.x, target_y)
 
 func _predict_second_bounce() -> Vector2:
-	var field_size = get_field_size()
-	var wall_x: float = field_size.x if defends_right_side else 0.0
+	var r := get_field_rect()
+	var wall_x: float = (r.position.x + r.size.x) if defends_right_side else r.position.x
 	var from: Vector2 = _ball.global_position
 	var vel: Vector2 = _ball.linear_velocity.normalized()
 	var dist: float = abs(wall_x - from.x)
@@ -423,11 +480,11 @@ func _predict_second_bounce() -> Vector2:
 	return first_hit + after_bounce * dist * 0.3
 
 func _predict_multi_bounce(ball_pos: Vector2, velocity: Vector2, max_bounces: int) -> Vector2:
-	var field_size = get_field_size()
+	var r := get_field_rect()
 	var pos: Vector2 = ball_pos
 	var vel: Vector2 = velocity
-	var top: float = 0.0
-	var bottom: float = field_size.y
+	var top: float = r.position.y
+	var bottom: float = r.position.y + r.size.y
 	var target_x: float = global_position.x
 	var player_x: float = _player.global_position.x
 	var b: int = 0
@@ -437,7 +494,7 @@ func _predict_multi_bounce(ball_pos: Vector2, velocity: Vector2, max_bounces: in
 			var t_to_me: float = (target_x - pos.x) / max(vel.x, 0.0001)
 			if t_to_me >= 0.0:
 				pos += vel * t_to_me
-				return Vector2(target_x, clamp(pos.y, 80.0, bottom - 80.0))
+				return Vector2(target_x, _clamp_y_to_field(pos.y))
 		var t_top: float = INF
 		var t_bottom: float = INF
 		if vel.y < 0.0:
@@ -461,10 +518,10 @@ func _predict_multi_bounce(ball_pos: Vector2, velocity: Vector2, max_bounces: in
 			vel.x = -vel.x * paddle_bounce_damp
 		b += 1
 	if is_zero_approx(vel.x):
-		return Vector2(target_x, clamp(pos.y, 80.0, bottom - 80.0))
+		return Vector2(target_x, _clamp_y_to_field(pos.y))
 	var t_final: float = (target_x - pos.x) / max(vel.x, 0.0001)
 	pos += vel * t_final
-	return Vector2(target_x, clamp(pos.y, 80.0, bottom - 80.0))
+return Vector2(target_x, _clamp_y_to_field(pos.y))
 
 # ---------- Prediction / Dodge helpers ----------
 func _is_on_my_side(pos: Vector2) -> bool:
@@ -484,13 +541,15 @@ func _predict_intercept() -> Vector2:
 	if t < 0.0:
 		return p
 	var y: float = p.y + v.y * t
-	var field_size = get_field_size()
-	var height: float = field_size.y
+	var r := get_field_rect()
+	var top: float = r.position.y
+	var height: float = r.size.y
 	var period: float = height * 2.0
-	y = fposmod(y, period)
-	if y > height:
-		y = period - y
-	return Vector2(paddle_x, clamp(y, 80.0, height - 80.0))
+	var local_y: float = fposmod(y - top, period)
+	if local_y > height:
+		local_y = period - local_y
+	var final_y: float = top + local_y
+	return Vector2(paddle_x, _clamp_y_to_field(final_y))
 
 func _predict_intercept_with_spin() -> Vector2:
 	"""
@@ -537,23 +596,25 @@ func _predict_intercept_with_spin() -> Vector2:
 	var final_y: float = base_y + spin_effect
 	
 	# Обработка отскоков от стен
-	var field_size = get_field_size()
-	var height: float = field_size.y
+	var r := get_field_rect()
+	var height: float = r.size.y
 	var period: float = height * 2.0
 	
 	# Применяем периодичность для отскоков
-	final_y = fposmod(final_y, period)
-	if final_y > height:
-		final_y = period - final_y
+	var top: float = r.position.y
+	var local_final: float = fposmod(final_y - top, period)
+	if local_final > height:
+		local_final = period - local_final
 	
-	return Vector2(paddle_x, clamp(final_y, 80.0, height - 80.0))
+	return Vector2(paddle_x, _clamp_y_to_field(top + local_final))
 
 func _dodge_pos(ball_pos: Vector2) -> Vector2:
-	var field_size = get_field_size()
+	var r := get_field_rect()
+	var mid_y := r.position.y + r.size.y * 0.5
 	var dir_y: float = sign(global_position.y - ball_pos.y)
 	if is_zero_approx(dir_y):
-		dir_y = 1.0 if ball_pos.y < field_size.y * 0.5 else -1.0
-	var target_y: float = clamp(global_position.y + dir_y * 400.0, 80.0, field_size.y - 80.0)
+		dir_y = 1.0 if ball_pos.y < mid_y else -1.0
+	var target_y: float = _clamp_y_to_field(global_position.y + dir_y * 400.0)
 	return Vector2(global_position.x, target_y)
 
 func _retreat_pos() -> Vector2:
@@ -566,18 +627,18 @@ func _add_error(style: Dictionary) -> void:
 	_target_pos += Vector2(randf_range(-r, r), randf_range(-r, r))
 
 func _clamp_advancement() -> void:
-	var field_size = get_field_size()
-	var limit_x: float = field_size.x * ADVANCE_LIMIT_PROPORTION
+	var r := get_field_rect()
+	var limit_x: float = r.size.x * ADVANCE_LIMIT_PROPORTION
 	if defends_right_side:
-		_target_pos.x = max(_target_pos.x, limit_x)
+		_target_pos.x = max(_target_pos.x, r.position.x + limit_x)
 	else:
-		_target_pos.x = min(_target_pos.x, field_size.x - limit_x)
+		_target_pos.x = min(_target_pos.x, r.position.x + r.size.x - limit_x)
 
 func _clamp_target_x() -> void:
 	"""Ограничивает _target_pos.x в пределах игровой области ракетки"""
-	var vp: Rect2 = get_viewport_rect()
+	var r: Rect2 = get_field_rect()
 	var half := _resolve_half_size()
-	var center_x := vp.position.x + vp.size.x * 0.5
+	var center_x := r.position.x + r.size.x * 0.5
 
 	# Применяем масштаб к отступам
 	var scaled_left_margin = float(LEFT_MARGIN_PX) * _scale_factor.x
@@ -590,27 +651,84 @@ func _clamp_target_x() -> void:
 		# правая половина
 		if use_center_as_right_limit:
 			min_x = center_x + scaled_center_bias + half.x
-			max_x = vp.position.x + vp.size.x - scaled_left_margin - half.x
+			max_x = r.position.x + r.size.x - scaled_left_margin - half.x
 		else:
-			min_x = vp.position.x + scaled_left_margin + half.x
-			max_x = vp.position.x + vp.size.x - scaled_left_margin - half.x
+			min_x = r.position.x + scaled_left_margin + half.x
+			max_x = r.position.x + r.size.x - scaled_left_margin - half.x
 	else:
 		# левая половина
 		if use_center_as_right_limit:
-			min_x = vp.position.x + scaled_left_margin + half.x
+			min_x = r.position.x + scaled_left_margin + half.x
 			max_x = center_x - scaled_center_bias - half.x
 		else:
-			min_x = vp.position.x + scaled_left_margin + half.x
-			max_x = vp.position.x + vp.size.x - scaled_left_margin - half.x
+			min_x = r.position.x + scaled_left_margin + half.x
+			max_x = r.position.x + r.size.x - scaled_left_margin - half.x
 
 	if min_x > max_x:
 		max_x = min_x
 
 	_target_pos.x = clamp(_target_pos.x, min_x, max_x)
 
+# ---------------- Stuck Detection Functions ----------------
+func _check_stuck_at_border() -> void:
+	"""Проверяет, застряла ли ракетка у верхней/нижней границы"""
+	var field_size = get_field_size()
+	var delta = get_physics_process_delta_time()
+	
+	# Проверяем, находится ли ракетка близко к границам
+	var near_top = global_position.y < r.position.y + _stuck_margin
+	var near_bottom = global_position.y > r.position.y + r.size.y - _stuck_margin
+	var near_border = near_top or near_bottom
+	
+	# Проверяем, далеко ли мяч
+	var ball_distance = global_position.distance_to(_ball.global_position) if _ball else 0.0
+	var ball_far = ball_distance > 300.0  # Мяч считается далеко, если больше 300 пикселей
+	
+	if near_border and ball_far:
+		_stuck_timer += delta
+		_emergency_reset_timer += delta
+	else:
+		_stuck_timer = 0.0
+		_emergency_reset_timer = 0.0
+	
+	# Если застряли дольше порога, принудительно выходим из угла
+	if _stuck_timer >= _stuck_threshold:
+		_force_exit_from_corner()
+	
+	# Аварийный сброс позиции
+	if _emergency_reset_timer >= _emergency_reset_threshold:
+		reset_position()
+
+func _force_exit_from_corner() -> void:
+	"""Принудительно выводит ракетку из угла"""
+	var field_size = get_field_size()
+	
+	# Сбрасываем задержку смены направления
+	_direction_change_delay = 0.0
+	
+	# Устанавливаем цель в центр поля
+	_target_pos = start_pos
+	
+	# Переводим в состояние защиты
+	_state = State.DEFEND
+	
+	# Задаём горизонтальную скорость для выхода из угла
+	var center_y = r.position.y + r.size.y * 0.5
+	var direction_to_center = sign(center_y - global_position.y)
+	var exit_speed = BASE_SPEED * 1.5  # Увеличенная скорость для выхода
+	
+	# Устанавливаем вертикальную скорость для движения к центру
+	velocity.y = direction_to_center * exit_speed
+	
+	# Сбрасываем таймер застревания
+	_stuck_timer = 0.0
+
 # ---------------- Movement & Clamp X ----------------
 func _move() -> void:
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
+	
+	# Проверяем застревание у границ
+	_check_stuck_at_border()
 	
 	# Плавно обновляем целевую позицию
 	_smooth_target_pos = _smooth_target_pos.lerp(_target_pos, _smooth_factor)
@@ -671,7 +789,7 @@ func _move() -> void:
 			_direction_change_delay = 0
 	
 	# Принудительное возвращение из углов
-	global_position.y = clamp(global_position.y, 80.0, get_field_size().y - 80.0)
+	global_position.y = _clamp_y_to_field(global_position.y)
 	
 	_clamp_x()
 
@@ -679,9 +797,9 @@ func _move() -> void:
 #                    HORIZONTAL CLAMP HELPERS
 # ==========================================================
 func _clamp_x() -> void:
-	var vp: Rect2 = get_viewport_rect()
+	var r: Rect2 = get_field_rect()
 	var half := _resolve_half_size()
-	var center_x := vp.position.x + vp.size.x * 0.5
+	var center_x := r.position.x + r.size.x * 0.5
 
 	# Применяем масштаб к отступам
 	var scaled_left_margin = float(LEFT_MARGIN_PX) * _scale_factor.x
@@ -694,18 +812,18 @@ func _clamp_x() -> void:
 		# правая половина
 		if use_center_as_right_limit:
 			min_x = center_x + scaled_center_bias + half.x
-			max_x = vp.position.x + vp.size.x - scaled_left_margin - half.x
+			max_x = r.position.x + r.size.x - scaled_left_margin - half.x
 		else:
-			min_x = vp.position.x + scaled_left_margin + half.x
-			max_x = vp.position.x + vp.size.x - scaled_left_margin - half.x
+			min_x = r.position.x + scaled_left_margin + half.x
+			max_x = r.position.x + r.size.x - scaled_left_margin - half.x
 	else:
 		# левая половина
 		if use_center_as_right_limit:
-			min_x = vp.position.x + scaled_left_margin + half.x
+			min_x = r.position.x + scaled_left_margin + half.x
 			max_x = center_x - scaled_center_bias - half.x
 		else:
-			min_x = vp.position.x + scaled_left_margin + half.x
-			max_x = vp.position.x + vp.size.x - scaled_left_margin - half.x
+			min_x = r.position.x + scaled_left_margin + half.x
+			max_x = r.position.x + r.size.x - scaled_left_margin - half.x
 
 	if min_x > max_x:
 		max_x = min_x
