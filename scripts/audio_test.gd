@@ -10,33 +10,18 @@ func _ready() -> void:
 		var bus_muted = AudioServer.is_bus_mute(i)
 		print("Шина ", i, ": ", bus_name, " (громкость: ", bus_volume, " дБ, выключена: ", bus_muted, ")")
 	
-	# Проверяем, есть ли AudioStreamPlayer в сцене
-	var atmosfera = get_node_or_null("../Atmosfera")
-	if atmosfera:
-		print("Atmosfera найден!")
-		print("  - stream: ", atmosfera.stream)
-		print("  - volume_db: ", atmosfera.volume_db)
-		print("  - bus: ", atmosfera.bus)
-		print("  - autoplay: ", atmosfera.autoplay)
-		print("  - playing: ", atmosfera.playing)
+	# Проверяем Music автолоад
+	if Music:
+		print("Music автолоад найден!")
+		if Music.player:
+			print("  - player: ", Music.player)
+			print("  - stream: ", Music.player.stream)
+			print("  - volume_db: ", Music.player.volume_db)
+			print("  - bus: ", Music.player.bus)
+			print("  - playing: ", Music.player.playing)
+		else:
+			print("  - player НЕ найден!")
 	else:
-		print("Atmosfera НЕ найден!")
-		# Попробуем найти по-другому
-		var game = get_parent()
-		if game:
-			atmosfera = game.get_node_or_null("Atmosfera")
-			if atmosfera:
-				print("Atmosfera найден через get_parent()!")
-				print("  - stream: ", atmosfera.stream)
-				print("  - volume_db: ", atmosfera.volume_db)
-				print("  - bus: ", atmosfera.bus)
-				print("  - autoplay: ", atmosfera.autoplay)
-				print("  - playing: ", atmosfera.playing)
-			else:
-				print("Atmosfera НЕ найден даже через get_parent()!")
-				# Выведем всех детей Game
-				print("Дети Game:")
-				for child in game.get_children():
-					print("  - ", child.name, " (", child.get_class(), ")")
+		print("Music автолоад НЕ найден!")
 	
 	print("==================")
