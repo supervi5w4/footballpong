@@ -91,8 +91,6 @@ grow_vertical = 0
 scale = Vector2(0.1, 0.1)
 texture = ExtResource("13_kvuet")
 
-
-
 [node name="ScoreRight" type="Label" parent="UI"]
 anchors_preset = -1
 anchor_left = 0.505208
@@ -210,8 +208,6 @@ position = Vector2(293, 656)
 
 [node name="AiPaddle" parent="." instance=ExtResource("5_iywne")]
 position = Vector2(1612, 650)
-skill = 0.0
-behaviour_style = "defensive"
 ball_path = NodePath("../Ball")
 player_path = NodePath("../PlayerPaddle")
 

@@ -224,6 +224,15 @@ func _handle_ball_collisions() -> void:
 			# Увеличиваем скорость мяча при ударе
 			if rb is Ball:
 				rb.boost_speed()
+				if Audio:
+					Audio.play(
+						"kick_1",
+						rb.global_position,
+						-10.0,   # базовая громкость
+						0.05,    # ±5% питч
+						3.0,     # ±3 дБ
+						0.5      # кулдаун 0.5 c
+					)
 
 func _resolve_half_size() -> Vector2:
 	# 1) Явное значение

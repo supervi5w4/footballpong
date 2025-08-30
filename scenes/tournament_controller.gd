@@ -221,8 +221,8 @@ func _on_first_half_ended() -> void:
 	print("Турнир: Первый тайм завершен")
 	
 	# Выводим лог с защитниками и счётом
-	var player_side = "слева" if Score.player_on_left else "справа"
-	var ai_side = "справа" if Score.player_on_left else "слева"
+	var player_side = tr("слева") if Score.player_on_left else tr("справа")
+	var ai_side = tr("справа") if Score.player_on_left else tr("слева")
 	print("Турнир: Завершение первого тайма - Игрок защищает %s, ИИ защищает %s, счёт %d:%d" % [player_side, ai_side, Score.left, Score.right])
 	
 	await _on_half_finished()
@@ -315,8 +315,8 @@ func _start_second_half() -> void:
 		ball._serve()
 	
 	# Логируем начало второго тайма
-	var player_side = "слева" if Score.player_on_left else "справа"
-	var ai_side = "справа" if Score.player_on_left else "слева"
+	var player_side = tr("слева") if Score.player_on_left else tr("справа")
+	var ai_side = tr("справа") if Score.player_on_left else tr("слева")
 	print("Турнир: Второй тайм начался - Игрок защищает %s, ИИ защищает %s" % [player_side, ai_side])
 
 func _finalize_match() -> void:

@@ -51,7 +51,7 @@ func _ready() -> void:
 	table_container.add_theme_constant_override("v_separation", PADDING)
 	
 	# Настройка кнопки
-	%ReplayBtn.text = "Начать турнир заново"
+	%ReplayBtn.text = tr("Начать турнир заново")
 	if not %ReplayBtn.pressed.is_connected(_on_replay_pressed):
 		%ReplayBtn.pressed.connect(_on_replay_pressed)
 	
@@ -69,7 +69,7 @@ func _render_table() -> void:
 		child.queue_free()
 
 	# Заголовки
-	var headers : Array = ["Команда", "Очки", "Забито", "Пропущено", "Разница"]
+	var headers : Array = [tr("Команда"), tr("Очки"), tr("Забито"), tr("Пропущено"), tr("Разница")]
 	for header_text in headers:
 		var header : Label = _create_label(header_text, true)
 		table_container.add_child(header)
@@ -153,10 +153,10 @@ func _show_player_place() -> void:
 			break
 	
 	if player_place >= 1:
-		var message : String = "Поздравляем — вы заняли %d-е место!" % player_place
+		var message : String = tr("Поздравляем — вы заняли {v}-е место!").format({"v": player_place})
 		place_label.text = message
 	else:
-		place_label.text = "Компьютер занял %d-е место" % player_place
+		place_label.text = tr("Компьютер занял {v}-е место").format({"v": player_place})
 
 # ---------- компаратор команд ----------
 func _compare_teams(a : Dictionary, b : Dictionary) -> bool:
@@ -174,8 +174,8 @@ func _compare_teams(a : Dictionary, b : Dictionary) -> bool:
 func _on_menu_pressed() -> void:
 	# Подтверждение перед выходом
 	var dialog = AcceptDialog.new()
-	dialog.title = "Подтверждение"
-	dialog.dialog_text = "Вы уверены, что хотите вернуться в меню?"
+	dialog.title = tr("Подтверждение")
+	dialog.dialog_text = tr("Вы уверены, что хотите вернуться в меню?")
 	dialog.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
 	dialog.add_theme_font_size_override("font_size", FONT_SIZE)
 	

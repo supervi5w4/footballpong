@@ -45,7 +45,7 @@ func _update_round_info() -> void:
 	print("  - total_rounds: ", total_rounds)
 	
 	if round_label:
-		round_label.text = "Тур %d из %d" % [Score.current_round + 1, total_rounds]
+		round_label.text = tr("Тур {v1} из {v2}").format({"v1": Score.current_round + 1, "v2": total_rounds})
 	if table_rows_container:
 		_render_table()
 	if top_rounds_container and bottom_rounds_container:
@@ -171,7 +171,7 @@ func _render_calendar() -> void:
 		
 		# Заголовок тура
 		var round_header = Label.new()
-		round_header.text = "ТУР %d" % (round_index + 1)
+		round_header.text = tr("ТУР {v}").format({"v": round_index + 1})
 		round_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		round_header.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		round_header.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))

@@ -63,6 +63,7 @@ var _is_first_hit: bool = true
 var _smooth_factor: float = 0.15  # Фактор плавности (0.1 = очень плавно, 0.3 = быстро)
 var _game_node: Node = null
 var _scale_factor: Vector2 = Vector2.ONE
+var _field_rect_debug_printed: bool = false  # Флаг для отладочных сообщений
 
 # ---------------- Stuck Detection Variables ----------------
 var _stuck_timer: float = 0.0  # Таймер застревания у границ
@@ -89,29 +90,117 @@ func get_half_field_x() -> float:
 func get_goal_right() -> Vector2:
 	"""Возвращает позицию правых ворот"""
 	var r := get_field_rect()
-	return Vector2(r.position.x + r.size.x, r.position.y + r.size.y * 0.5)
+	var goal_x = r.position.x + r.size.x
+	var goal_y = r.position.y + r.size.y * 0.5
+	
+	# Проверяем, что границы поля разумные
+	if r.size.x <= 0 or r.size.y <= 0:
+		# Используем фиксированные значения
+		goal_x = 1870.0
+		goal_y = 540.0
+		print("AiPaddle: get_goal_right() - используем фиксированные значения: ", Vector2(goal_x, goal_y))
+		return Vector2(goal_x, goal_y)
+	
+	return Vector2(goal_x, goal_y)
 
 # Helper: real field rect and Y clamp
 func get_field_rect() -> Rect2:
 	if _game_node and _game_node.has_method("get_field_bounds"):
-		return _game_node.get_field_bounds()
-	var vp := get_viewport_rect()
-	return Rect2(vp.position, vp.size)
+		var r: Rect2 = _game_node.get_field_bounds()
+		# Проверяем, что границы разумные и в допустимых пределах
+		if r.size != Vector2.ZERO and r.size.x > 0 and r.size.y > 0 and r.size.x < 3000.0 and r.size.y < 2000.0:
+			print("AiPaddle: get_field_rect() - используем границы от game_node: ", r)
+			return r
+		else:
+			# Отладочная информация только при первом вызове
+			if not _field_rect_debug_printed:
+				print("AiPaddle: get_field_rect() - игровая сцена вернула неправильные границы: ", r)
+				_field_rect_debug_printed = true
+	
+	# Fallback: используем фиксированные границы поля на основе позиций игроков
+	var field_width = 1920.0
+	var field_height = 1080.0
+	
+	# Если у нас есть игрок и AI, используем их позиции для определения границ
+	if _player and is_instance_valid(_player):
+		var player_x = _player.global_position.x
+		var ai_x = global_position.x
+		
+		# Проверяем, что позиции игроков разумные
+		if abs(player_x) < 10000.0 and abs(ai_x) < 10000.0:
+			# Определяем границы поля на основе позиций игроков
+			var left_bound = min(player_x - 100, 50.0)  # Левая граница
+			var right_bound = max(ai_x + 100, field_width - 50.0)  # Правая граница
+			
+			field_width = right_bound - left_bound
+			
+			# Проверяем, что ширина поля разумная
+			if field_width > 0 and field_width < 3000.0:
+				var field_rect = Rect2(left_bound, 100.0, field_width, field_height - 200.0)
+				# Отладочная информация только при первом вызове
+				if not _field_rect_debug_printed:
+					print("AiPaddle: get_field_rect() - используем fallback границы: ", field_rect)
+					_field_rect_debug_printed = true
+				return field_rect
+	
+	# Fallback: используем фиксированные границы поля
+	var fixed_rect = Rect2(50.0, 100.0, 1820.0, 880.0)
+	# Отладочная информация только при первом вызове
+	if not _field_rect_debug_printed:
+		print("AiPaddle: get_field_rect() - используем фиксированные границы: ", fixed_rect)
+		_field_rect_debug_printed = true
+	return fixed_rect
 
 func _clamp_y_to_field(y: float, margin: float = 80.0) -> float:
+	# Защита от огромных значений
+	if abs(y) > 10000.0:
+		print("AiPaddle: _clamp_y_to_field() - ОГРОМНОЕ ЗНАЧЕНИЕ Y: ", y, " - используем start_pos.y")
+		return start_pos.y
+	
 	var r := get_field_rect()
-	return clamp(y, r.position.y + margin, r.position.y + r.size.y - margin)
+	var min_y = r.position.y + margin
+	var max_y = r.position.y + r.size.y - margin
+	
+	# Проверяем, что границы разумные и в допустимых пределах
+	if min_y >= max_y or r.size.y <= 0 or r.size.y > 2000.0 or min_y < -1000.0 or max_y > 2000.0:
+		# Если границы неправильные, используем фиксированные значения
+		min_y = 100.0
+		max_y = 980.0
+		print("AiPaddle: _clamp_y_to_field() - используем фиксированные границы: ", min_y, " - ", max_y)
+	
+	var clamped_y = clamp(y, min_y, max_y)
+	# Отладочная информация только при значительных изменениях
+	if abs(y - clamped_y) > 10.0:
+		print("AiPaddle: _clamp_y_to_field() - ", y, " -> ", clamped_y, " (границы: ", min_y, " - ", max_y, ")")
+	return clamped_y
 
 # ---------------- READY ----------------
 func _ready() -> void:
+	# Ждем один кадр для полной инициализации сцены
+	await get_tree().process_frame
+	
 	_ball = get_node_or_null(ball_path) as RigidBody2D
 	_player = get_node_or_null(player_path) as CharacterBody2D
+	
 	if _ball == null or _player == null:
-		push_error("AiPaddle: ball_path/player_path не назначены.")
+		push_error("AiPaddle: ball_path/player_path не назначены. ball_path=" + str(ball_path) + " player_path=" + str(player_path))
 		set_physics_process(false)
 		return
+	
+	# Дополнительная проверка, что узлы действительно существуют
+	if not is_instance_valid(_ball) or not is_instance_valid(_player):
+		push_error("AiPaddle: ball или player не являются валидными экземплярами.")
+		set_physics_process(false)
+		return
+	
 	start_pos = global_position
 	_smooth_target_pos = global_position  # Инициализируем плавную цель
+	_target_pos = global_position  # Инициализируем целевую позицию
+	
+	print("AiPaddle: Инициализация завершена")
+	print("AiPaddle: start_pos = ", start_pos)
+	print("AiPaddle: _target_pos = ", _target_pos)
+	print("AiPaddle: _smooth_target_pos = ", _smooth_target_pos)
 	
 	# Находим игровую сцену для получения масштаба
 	_find_game_node()
@@ -198,13 +287,20 @@ func _physics_process(delta: float) -> void:
 	if _time_to_next_think <= 0.0:
 		_think()
 		_schedule_next_think()
+	
 	_move()
-	_handle_ball_collisions()
-	_check_first_hit_reset()
-	_detect_player_shot()
+	
+	# Обрабатываем коллизии и другие функции только если мяч и игрок доступны
+	if _ball and _player:
+		_handle_ball_collisions()
+		_check_first_hit_reset()
+		_detect_player_shot()
 
 # ------------ Collision & First-hit helpers ------------
 func _handle_ball_collisions() -> void:
+	if not _ball or not _player:
+		return
+		
 	for i in range(get_slide_collision_count()):
 		var col: KinematicCollision2D = get_slide_collision(i)
 		var rb := col.get_collider() as RigidBody2D
@@ -303,12 +399,21 @@ func _detect_player_shot() -> void:
 		record_player_shot()
 
 func _check_first_hit_reset() -> void:
+	if not _ball:
+		return
+		
 	if not _is_first_hit:
 		var left_side: bool = _ball.global_position.x < get_half_field_x()
 		if (defends_right_side and left_side) or (not defends_right_side and not left_side):
 			_is_first_hit = true
 
 func _schedule_next_think() -> void:
+	# Проверяем, что мяч доступен
+	if not _ball:
+		_time_to_next_think = 0.2  # Уменьшаем интервал для более частого обновления
+		print("AiPaddle: _schedule_next_think() - мяч недоступен, интервал = ", _time_to_next_think)
+		return
+		
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
 	var weak := 1.0 - skill
 	# Увеличиваем реакцию в зависимости от (1 - skill)^2 для низких навыков
@@ -320,6 +425,14 @@ func _schedule_next_think() -> void:
 
 # ---------------- THINK ----------------
 func _think() -> void:
+	# Проверяем, что мяч и игрок доступны
+	if not _ball or not _player:
+		# Устанавливаем fallback значения, если мяч или игрок недоступны
+		_target_pos = start_pos
+		_state = State.DEFEND
+		print("AiPaddle: _think() - мяч или игрок недоступны, используем fallback")
+		return
+		
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
 	aggression = clamp(aggression, 0.0, 1.0)
 
@@ -420,11 +533,54 @@ func _think() -> void:
 	_add_error(style)
 	_clamp_advancement()
 	_clamp_target_x()
+	
+	# Защита от огромных значений целевой позиции
+	if abs(_target_pos.x) > 10000.0 or abs(_target_pos.y) > 10000.0:
+		print("AiPaddle: _think() - ОГРОМНЫЕ ЗНАЧЕНИЯ _target_pos: ", _target_pos, " - сбрасываем в start_pos")
+		_target_pos = start_pos
+		return
+	
+	# Проверяем, что целевая позиция разумная
+	var field_rect = get_field_rect()
+	var min_x = field_rect.position.x - 100
+	var max_x = field_rect.position.x + field_rect.size.x + 100
+	var min_y = field_rect.position.y - 100
+	var max_y = field_rect.position.y + field_rect.size.y + 100
+	
+	# Проверяем, что границы поля разумные
+	if field_rect.size.x <= 0 or field_rect.size.y <= 0:
+		print("AiPaddle: Invalid field rect detected: ", field_rect)
+		# Используем фиксированные границы
+		min_x = 50.0
+		max_x = 1870.0
+		min_y = 100.0
+		max_y = 980.0
+		print("AiPaddle: Using fixed boundaries: X(", min_x, " - ", max_x, ") Y(", min_y, " - ", max_y, ")")
+	
+	if _target_pos.x < min_x or _target_pos.x > max_x or _target_pos.y < min_y or _target_pos.y > max_y:
+		print("AiPaddle: Invalid target position detected: ", _target_pos, " field: ", field_rect)
+		print("AiPaddle: Valid range: X(", min_x, " - ", max_x, ") Y(", min_y, " - ", max_y, ")")
+		# Сбрасываем к стартовой позиции
+		_target_pos = start_pos
+		print("AiPaddle: Reset target position to start_pos: ", _target_pos)
 
 # ------------ Helper Calculations ---------------
 func _goal_pos(ball_pos: Vector2) -> Vector2:
 	var my_goal: Vector2 = get_goal_right() if defends_right_side else goal_left
 	var base_pos = my_goal.lerp(ball_pos, 0.25)
+	
+	# Ограничиваем X-координату в разумных пределах
+	var field_rect = get_field_rect()
+	var min_x = field_rect.position.x + 50
+	var max_x = field_rect.position.x + field_rect.size.x - 50
+	
+	# Проверяем, что границы поля разумные
+	if field_rect.size.x <= 0:
+		min_x = 100.0
+		max_x = 1820.0
+		print("AiPaddle: _goal_pos() - используем фиксированные X границы: ", min_x, " - ", max_x)
+	
+	base_pos.x = clamp(base_pos.x, min_x, max_x)
 	
 	# Используем историю ударов для корректировки позиции на высоких навыках
 	if should_use_shot_history():
@@ -440,6 +596,8 @@ func _goal_pos(ball_pos: Vector2) -> Vector2:
 		
 		return Vector2(base_pos.x, target_y)
 	
+	# Ограничиваем Y-координату в любом случае
+	base_pos.y = _clamp_y_to_field(base_pos.y)
 	return base_pos
 
 func _attack_pos(ball_pos: Vector2) -> Vector2:
@@ -471,6 +629,9 @@ func _edge_guard_pos(ball_pos: Vector2) -> Vector2:
 	return Vector2(global_position.x, target_y)
 
 func _predict_second_bounce() -> Vector2:
+	if not _ball:
+		return global_position
+		
 	var r := get_field_rect()
 	var wall_x: float = (r.position.x + r.size.x) if defends_right_side else r.position.x
 	var from: Vector2 = _ball.global_position
@@ -522,17 +683,23 @@ func _predict_multi_bounce(ball_pos: Vector2, velocity: Vector2, max_bounces: in
 		return Vector2(target_x, _clamp_y_to_field(pos.y))
 	var t_final: float = (target_x - pos.x) / max(vel.x, 0.0001)
 	pos += vel * t_final
-return Vector2(target_x, _clamp_y_to_field(pos.y))
+	return Vector2(target_x, _clamp_y_to_field(pos.y))
 
 # ---------- Prediction / Dodge helpers ----------
 func _is_on_my_side(pos: Vector2) -> bool:
 	return (defends_right_side and pos.x > get_half_field_x()) or (not defends_right_side and pos.x < get_half_field_x())
 
 func _is_ball_behind() -> bool:
+	if not _ball:
+		return false
+		
 	return (defends_right_side and _ball.global_position.x > global_position.x) or \
 		   (not defends_right_side and _ball.global_position.x < global_position.x)
 
 func _predict_intercept() -> Vector2:
+	if not _ball:
+		return global_position
+		
 	var paddle_x: float = global_position.x
 	var p: Vector2 = _ball.global_position
 	var v: Vector2 = _ball.linear_velocity
@@ -542,10 +709,27 @@ func _predict_intercept() -> Vector2:
 	if t < 0.0:
 		return p
 	var y: float = p.y + v.y * t
+	
+	# Защита от огромных значений
+	if abs(y) > 10000.0:
+		print("AiPaddle: _predict_intercept() - ОГРОМНОЕ ЗНАЧЕНИЕ Y: ", y, " - используем start_pos")
+		return Vector2(paddle_x, start_pos.y)
+	
 	var r := get_field_rect()
 	var top: float = r.position.y
 	var height: float = r.size.y
 	var period: float = height * 2.0
+	
+	# Защита от неправильных границ поля
+	if height <= 0.0 or period <= 0.0 or height > 2000.0 or period > 4000.0:
+		print("AiPaddle: _predict_intercept() - НЕПРАВИЛЬНЫЕ ГРАНИЦЫ: height=", height, " period=", period)
+		return Vector2(paddle_x, start_pos.y)
+	
+	# Защита от огромных значений перед fposmod
+	if abs(y - top) > 10000.0:
+		print("AiPaddle: _predict_intercept() - ОГРОМНОЕ ЗНАЧЕНИЕ (y - top): ", (y - top), " - используем start_pos")
+		return Vector2(paddle_x, start_pos.y)
+	
 	var local_y: float = fposmod(y - top, period)
 	if local_y > height:
 		local_y = period - local_y
@@ -557,6 +741,9 @@ func _predict_intercept_with_spin() -> Vector2:
 	Предсказывает точку перехвата мяча с учётом его спина (angular_velocity).
 	Спин влияет на траекторию мяча, создавая эффект Магнуса.
 	"""
+	if not _ball:
+		return global_position
+		
 	var paddle_x: float = global_position.x
 	var p: Vector2 = _ball.global_position
 	var v: Vector2 = _ball.linear_velocity
@@ -596,13 +783,28 @@ func _predict_intercept_with_spin() -> Vector2:
 	# Финальная позиция с учётом спина
 	var final_y: float = base_y + spin_effect
 	
+	# Защита от огромных значений
+	if abs(final_y) > 10000.0:
+		print("AiPaddle: _predict_intercept_with_spin() - ОГРОМНОЕ ЗНАЧЕНИЕ final_y: ", final_y, " - используем start_pos")
+		return Vector2(paddle_x, start_pos.y)
+	
 	# Обработка отскоков от стен
 	var r := get_field_rect()
 	var height: float = r.size.y
 	var period: float = height * 2.0
+	var top: float = r.position.y
+	
+	# Защита от неправильных границ поля
+	if height <= 0.0 or period <= 0.0 or height > 2000.0 or period > 4000.0:
+		print("AiPaddle: _predict_intercept_with_spin() - НЕПРАВИЛЬНЫЕ ГРАНИЦЫ: height=", height, " period=", period)
+		return Vector2(paddle_x, start_pos.y)
+	
+	# Защита от огромных значений перед fposmod
+	if abs(final_y - top) > 10000.0:
+		print("AiPaddle: _predict_intercept_with_spin() - ОГРОМНОЕ ЗНАЧЕНИЕ (final_y - top): ", (final_y - top), " - используем start_pos")
+		return Vector2(paddle_x, start_pos.y)
 	
 	# Применяем периодичность для отскоков
-	var top: float = r.position.y
 	var local_final: float = fposmod(final_y - top, period)
 	if local_final > height:
 		local_final = period - local_final
@@ -673,8 +875,12 @@ func _clamp_target_x() -> void:
 # ---------------- Stuck Detection Functions ----------------
 func _check_stuck_at_border() -> void:
 	"""Проверяет, застряла ли ракетка у верхней/нижней границы"""
+	if not _ball:
+		return
+		
 	var field_size = get_field_size()
 	var delta = get_physics_process_delta_time()
+	var r: Rect2 = get_field_rect()
 	
 	# Проверяем, находится ли ракетка близко к границам
 	var near_top = global_position.y < r.position.y + _stuck_margin
@@ -703,6 +909,7 @@ func _check_stuck_at_border() -> void:
 func _force_exit_from_corner() -> void:
 	"""Принудительно выводит ракетку из угла"""
 	var field_size = get_field_size()
+	var r: Rect2 = get_field_rect()
 	
 	# Сбрасываем задержку смены направления
 	_direction_change_delay = 0.0
@@ -728,14 +935,24 @@ func _force_exit_from_corner() -> void:
 func _move() -> void:
 	var style: Dictionary = STYLE_DB.get(behaviour_style, STYLE_DB["balanced"])
 	
-	# Проверяем застревание у границ
-	_check_stuck_at_border()
+	# Проверяем застревание у границ только если мяч доступен
+	if _ball:
+		_check_stuck_at_border()
 	
 	# Плавно обновляем целевую позицию
 	_smooth_target_pos = _smooth_target_pos.lerp(_target_pos, _smooth_factor)
 	
 	# Вычисляем направление к плавной цели
 	var dir: Vector2 = _smooth_target_pos - global_position
+	
+	# Отладочная информация периодически
+	if Engine.get_process_frames() % 180 == 0:  # Каждые 3 секунды
+		print("AiPaddle: _move() - dir.length() = ", dir.length())
+		print("AiPaddle: _move() - _target_pos = ", _target_pos)
+		print("AiPaddle: _move() - _smooth_target_pos = ", _smooth_target_pos)
+		print("AiPaddle: _move() - global_position = ", global_position)
+		print("AiPaddle: _move() - velocity = ", velocity)
+	
 	if dir.length() < 2.0:
 		velocity = Vector2.ZERO
 		return
@@ -748,7 +965,7 @@ func _move() -> void:
 		var direction_change = current_dir.dot(dir) < 0.5  # Значительное изменение направления
 		
 		if direction_change and _direction_change_delay <= 0.0:
-			_direction_change_delay = lerp(0.1, 0.0, skill)  # Задержка от 0.1 до 0.0 секунд
+			_direction_change_delay = lerp(0.05, 0.0, skill)  # Уменьшили максимальную задержку
 		
 		if _direction_change_delay > 0.0:
 			_direction_change_delay -= get_physics_process_delta_time()
@@ -759,9 +976,12 @@ func _move() -> void:
 				return
 	
 	# Усиливаем джиттер для низких навыков, уменьшаем для высоких
-	var jitter_mag: float = pow(1.0 - skill, 1.5) * 0.5  # Усилили джиттер для низких навыков
+	var jitter_mag: float = pow(1.0 - skill, 1.5) * 0.3  # Уменьшили максимальный джиттер
 	var speed_jitter: float = randf_range(1.0 - jitter_mag, 1.0 + jitter_mag)
-	var speed: float = BASE_SPEED * float(style.speed_mul) * speed_jitter * lerp(0.4, 1.0, skill)
+	# Минимальная скорость для предотвращения застревания
+	var min_speed = BASE_SPEED * 0.3  # Минимум 30% от базовой скорости
+	var skill_speed = BASE_SPEED * float(style.speed_mul) * speed_jitter * lerp(0.4, 1.0, skill)
+	var speed: float = max(skill_speed, min_speed)
 	
 	# Настройки скорости в зависимости от состояния
 	match _state:
@@ -789,8 +1009,25 @@ func _move() -> void:
 		if collision.get_normal().y != 0:
 			_direction_change_delay = 0
 	
+	# Защита от огромных значений позиции
+	if abs(global_position.x) > 10000.0 or abs(global_position.y) > 10000.0:
+		print("AiPaddle: _move() - ОГРОМНЫЕ ЗНАЧЕНИЯ ПОЗИЦИИ: ", global_position, " - сбрасываем в start_pos")
+		global_position = start_pos
+		_smooth_target_pos = start_pos
+		velocity = Vector2.ZERO
+		return
+	
 	# Принудительное возвращение из углов
 	global_position.y = _clamp_y_to_field(global_position.y)
+	
+	# Проверяем, не застряла ли ракетка
+	var field_rect = get_field_rect()
+	if global_position.x < field_rect.position.x - 50 or global_position.x > field_rect.position.x + field_rect.size.x + 50 or \
+	   global_position.y < field_rect.position.y - 50 or global_position.y > field_rect.position.y + field_rect.size.y + 50:
+		print("AiPaddle: Paddle stuck outside field, resetting to start position")
+		global_position = start_pos
+		_smooth_target_pos = start_pos
+		velocity = Vector2.ZERO
 	
 	_clamp_x()
 

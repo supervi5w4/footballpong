@@ -51,9 +51,9 @@ func _on_body_entered(body: Node) -> void:
 		goal_scorer = "Игрок"
 	
 	# Логируем событие: тайм, защитники, автор и счёт
-	var player_side = "слева" if _score.player_on_left else "справа"
-	var ai_side = "справа" if _score.player_on_left else "слева"
-	var goal_side = "справа" if is_right_goal else "слева"
+	var player_side = tr("слева") if _score.player_on_left else tr("справа")
+	var ai_side = tr("справа") if _score.player_on_left else tr("слева")
+	var goal_side = tr("справа") if is_right_goal else tr("слева")
 	
 	print("ГОЛ! Тайм %d: %s забил в ворота %s! Игрок защищает %s, ИИ защищает %s. Счёт %d:%d" % [
 		_score.current_half, goal_scorer, goal_side, player_side, ai_side, _score.left, _score.right

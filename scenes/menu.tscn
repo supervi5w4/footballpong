@@ -67,3 +67,60 @@ scale = Vector2(0.7, 0.7)
 mouse_filter = 2
 texture = ExtResource("1_con2f")
 metadata/_edit_use_anchors_ = true
+
+[node name="LangButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -120.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 60.0
+grow_horizontal = 0
+theme_override_fonts/font = ExtResource("1_vjb58")
+theme_override_font_sizes/font_size = 16
+text = "EN / RU"
+
+[node name="HowToPlayPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -378.0
+offset_top = 259.0
+offset_right = 322.0
+offset_bottom = 409.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HowToPlayPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="RichTextLabel" type="RichTextLabel" parent="HowToPlayPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("1_vjb58")
+theme_override_font_sizes/mono_font_size = 1
+theme_override_font_sizes/normal_font_size = 13
+bbcode_enabled = true
+text = "• [b]Управление:[/b] стрелки ← ↑ ↓ → — перемещайте ракетку.  
+
+• [b]Быстрая игра:[/b] один полноценный матч — сыграйте и сразу узнайте результат.
+
+• [b]Турнир:[/b] серия из 6 матчей — пройдите дистанцию и докажите стабильность."
+fit_content = true
+scroll_active = false
+autowrap_mode = 2
+horizontal_alignment = 1
