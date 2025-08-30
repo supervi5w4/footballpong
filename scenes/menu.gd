@@ -39,50 +39,29 @@ func _on_lang_button_pressed() -> void:
 	print("=== КНОПКА ПЕРЕКЛЮЧЕНИЯ ЯЗЫКА НАЖАТА ===")
 	
 	var cur := TranslationServer.get_locale()
-	var next := "ru" if cur == "en" else "en"
+	var next := "en" if cur == "ru" else "ru"
 	print("Текущий язык: ", cur, ", переключаем на: ", next)
 	
-	# Прямое переключение через TranslationServer
-	TranslationServer.set_locale(next)
-	print("Переключен язык с ", cur, " на ", next)
-	
-	# Проверяем результат
-	var new_locale = TranslationServer.get_locale()
-	print("Проверка: новая локаль = ", new_locale)
-	
-	# Тестируем перевод
-	var test_text = tr("Быстрая игра")
-	print("Тест перевода 'Быстрая игра' = '", test_text, "'")
-	
-	# Обновляем все элементы меню вручную
-	print("Обновляем элементы меню вручную...")
-	_update_menu_elements()
+	# Получаем ссылку на LocaleManager и вызываем set_lang
+	var locale_manager = get_node("/root/LocaleManager")
+	if locale_manager:
+		locale_manager.set_lang(next)
+		print("Переключен язык через LocaleManager с ", cur, " на ", next)
+	else:
+		print("ОШИБКА: LocaleManager не найден!")
+		return
 	
 	# Обновляем текст кнопки после смены языка
 	_update_lang_button_text()
 	
 	print("Переключение завершено")
 
-func _update_menu_elements() -> void:
-	# Обновляем кнопки
-	if play_btn:
-		play_btn.text = tr("Быстрая игра")
-		print("PlayBtn обновлен: ", play_btn.text)
-	
-	if tournament_btn:
-		tournament_btn.text = tr("Турнир")
-		print("TournamentBtn обновлен: ", tournament_btn.text)
-	
-	# Обновляем RichTextLabel с инструкциями
-	var instructions_label = get_node_or_null("HowToPlayPanel/VBoxContainer/RichTextLabel")
-	if instructions_label:
-		instructions_label.text = tr("• [b]Управление:[/b] стрелки ← ↑ ↓ → — перемещайте ракетку.  \n\n• [b]Быстрая игра:[/b] один полноценный матч — сыграйте и сразу узнайте результат.\n\n• [b]Турнир:[/b] серия из 6 матчей — пройдите дистанцию и докажите стабильность.")
-		print("InstructionsLabel обновлен")
+
 
 func _update_lang_button_text() -> void:
 	var current_lang := TranslationServer.get_locale()
 	# Показываем противоположный язык (что будет при нажатии)
-	var button_text := "RU" if current_lang == "en" else "EN"
+	var button_text := "EN" if current_lang == "ru" else "RU"
 	lang_btn.text = button_text
 	print("Кнопка обновлена: ", button_text, " (текущий язык: ", current_lang, ")")
 	
