@@ -7,7 +7,6 @@ extends Node
 @export var pause_between_halves: float = 3.0   # Пауза между таймами (сек)
 
 @onready var game_node: Node2D = get_parent() as Node2D
-@onready var message_label: Label = game_node.get_node("UI/MessageLabel") as Label
 @onready var time_scoreboard: TimeScoreboard = game_node.get_node("UI/TimeScoreboard") as TimeScoreboard
 
 var current_half: int = 0
@@ -242,10 +241,6 @@ func _start_next_half() -> void:
 	# Обновляем Score.current_half
 	Score.current_half = current_half
 	
-	# Скрываем сообщения
-	if message_label:
-		message_label.visible = false
-	
 	# Перезапускаем раунд
 	game_node.call("reset_round")
 	
@@ -263,9 +258,7 @@ func _on_half_finished() -> void:
 		if ball:
 			ball.freeze = true
 		
-		if message_label:
-			message_label.text = "Второй тайм через %d сек" % int(pause_between_halves)
-			message_label.visible = true
+		# Ждем паузу между таймами
 		var tree = get_tree()
 		if tree != null:
 			await tree.create_timer(pause_between_halves).timeout
@@ -278,10 +271,6 @@ func _on_half_finished() -> void:
 func _start_second_half() -> void:
 	"""Запуск второго тайма с возвратом мяча в центр и сменой сторон"""
 	print("Турнир: Запуск второго тайма")
-	
-	# Скрываем надпись о паузе между таймами
-	if message_label:
-		message_label.visible = false
 	
 	# Размораживаем мяч
 	var ball = game_node.get_node_or_null("Ball")
@@ -331,18 +320,6 @@ func _start_second_half() -> void:
 	print("Турнир: Второй тайм начался - Игрок защищает %s, ИИ защищает %s" % [player_side, ai_side])
 
 func _finalize_match() -> void:
-	# Показываем надпись "Матч окончен" на 3 секунды
-	if message_label:
-		message_label.text = "Матч окончен"
-		message_label.visible = true
-	
-	# Ждем 3 секунды
-	await get_tree().create_timer(3.0).timeout
-	
-	# Скрываем надпись
-	if message_label:
-		message_label.visible = false
-	
 	var idx: int = Score.current_match
 
 	if idx >= 0 and idx < Score.matches.size():

@@ -59,7 +59,6 @@ const BASE_AI_PADDLE_POS := Vector2(1486, 529)
 @onready var score_left_label: Label = $UI/ScoreLeft
 @onready var score_right_label: Label = $UI/ScoreRight
 @onready var time_scoreboard: TimeScoreboard = $UI/TimeScoreboard
-@onready var message_label: Label = $UI/MessageLabel
 
 var _game_started: bool = false
 var _viewport_size: Vector2 = Vector2.ZERO
@@ -377,18 +376,6 @@ func _start_second_half() -> void:
 func _on_match_ended() -> void:
 	"""Обработчик окончания матча"""
 	print("Game: Матч завершен")
-	
-	# Показываем надпись "Матч окончен" на 3 секунды
-	if message_label:
-		message_label.text = "Матч окончен"
-		message_label.visible = true
-	
-	# Ждем 3 секунды
-	await get_tree().create_timer(3.0).timeout
-	
-	# Скрываем надпись
-	if message_label:
-		message_label.visible = false
 	
 	# Возвращаемся в главное меню
 	_return_to_menu()

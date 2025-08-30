@@ -627,6 +627,16 @@ func _move() -> void:
 	
 	velocity = dir * new_speed
 	move_and_slide()
+	
+	# Обработка коллизий для предотвращения застревания в углах
+	for i in range(get_slide_collision_count()):
+		var collision = get_slide_collision(i)
+		if collision.get_normal().y != 0:
+			_direction_change_delay = 0
+	
+	# Принудительное возвращение из углов
+	global_position.y = clamp(global_position.y, 80.0, get_field_size().y - 80.0)
+	
 	_clamp_x()
 
 # ==========================================================
