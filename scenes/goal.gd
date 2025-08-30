@@ -63,9 +63,6 @@ func _on_body_entered(body: Node) -> void:
 	if _sound:
 		_sound.play()
 	
-	# Показываем рекламу при забивании
-	YandexSDK.show_interstitial_on_goal()
-	
 	# Перезапуск раунда
 	var game := get_tree().get_root().get_node_or_null("Game")
 	if game and game.has_method("reset_round"):

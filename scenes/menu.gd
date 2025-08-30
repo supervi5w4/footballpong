@@ -16,22 +16,12 @@ func _ready() -> void:
 		YandexSDK.game_ready()
 
 func _on_play_pressed() -> void:
-	# Показываем рекламу перед переходом к игре
-	if YandexSDK.is_working():
-		YandexSDK.show_interstitial_ad()
-		# Ждем завершения показа рекламы
-		await YandexSDK.interstitial_ad
 	# Устанавливаем current_match в -1 для обычной игры
 	Score.current_match = -1
 	# Переход к игре
 	get_tree().change_scene_to_file("res://scenes/game.tscn")
 
 func _on_tournament_pressed() -> void:
-	# Показываем рекламу перед переходом к турниру
-	if YandexSDK.is_working():
-		YandexSDK.show_interstitial_ad()
-		# Ждем завершения показа рекламы
-		await YandexSDK.interstitial_ad
 	# Переход к сцене выбора команд для турнира (создадим её на следующем шаге)
 	get_tree().change_scene_to_file("res://scenes/tournament_menu.tscn")
 

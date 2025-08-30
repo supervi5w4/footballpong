@@ -365,6 +365,7 @@ func _think() -> void:
 
 	_add_error(style)
 	_clamp_advancement()
+	_clamp_target_x()
 
 # ------------ Helper Calculations ---------------
 func _goal_pos(ball_pos: Vector2) -> Vector2:
@@ -571,6 +572,41 @@ func _clamp_advancement() -> void:
 		_target_pos.x = max(_target_pos.x, limit_x)
 	else:
 		_target_pos.x = min(_target_pos.x, field_size.x - limit_x)
+
+func _clamp_target_x() -> void:
+	"""Ограничивает _target_pos.x в пределах игровой области ракетки"""
+	var vp: Rect2 = get_viewport_rect()
+	var half := _resolve_half_size()
+	var center_x := vp.position.x + vp.size.x * 0.5
+
+	# Применяем масштаб к отступам
+	var scaled_left_margin = float(LEFT_MARGIN_PX) * _scale_factor.x
+	var scaled_center_bias = float(center_bias_px) * _scale_factor.x
+
+	var min_x: float
+	var max_x: float
+
+	if defends_right_side:
+		# правая половина
+		if use_center_as_right_limit:
+			min_x = center_x + scaled_center_bias + half.x
+			max_x = vp.position.x + vp.size.x - scaled_left_margin - half.x
+		else:
+			min_x = vp.position.x + scaled_left_margin + half.x
+			max_x = vp.position.x + vp.size.x - scaled_left_margin - half.x
+	else:
+		# левая половина
+		if use_center_as_right_limit:
+			min_x = vp.position.x + scaled_left_margin + half.x
+			max_x = center_x - scaled_center_bias - half.x
+		else:
+			min_x = vp.position.x + scaled_left_margin + half.x
+			max_x = vp.position.x + vp.size.x - scaled_left_margin - half.x
+
+	if min_x > max_x:
+		max_x = min_x
+
+	_target_pos.x = clamp(_target_pos.x, min_x, max_x)
 
 # ---------------- Movement & Clamp X ----------------
 func _move() -> void:
