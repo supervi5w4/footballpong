@@ -34,8 +34,12 @@ window/stretch/aspect="keep_height"
 
 enabled=PackedStringArray("res://addons/yandex_games_sdk/plugin.cfg")
 
+[internationalization]
+
+locale/translations=PackedStringArray("res://i18n/locale.en.translation", "res://i18n/locale.ru.translation")
+
 [locale]
 
-locale="en"
+locale="ru"
 translations=PackedStringArray("res://i18n/locale.en.translation", "res://i18n/locale.ru.translation")
-locale/fallbacks=PackedStringArray("en", "ru")
+locale/fallbacks=PackedStringArray("ru", "en")
