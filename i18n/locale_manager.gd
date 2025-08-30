@@ -72,8 +72,8 @@ func _auto_detect_web_language() -> void:
 			if lang and lang.begins_with("ru"):
 				TranslationServer.set_locale("ru")
 			else:
-				TranslationServer.set_locale("en")
+				TranslationServer.set_locale("ru")
 		else:
-			TranslationServer.set_locale("en")
+			TranslationServer.set_locale("ru")
 	else:
-		TranslationServer.set_locale("en")
+		TranslationServer.set_locale("ru")
