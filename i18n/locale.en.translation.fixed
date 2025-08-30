@@ -1,0 +1,26 @@
+[gd_resource type="Translation" format=3]
+
+[resource]
+locale="en"
+translations={
+"Быстрая игра": "Quick Game",
+"В меню": "To Menu",
+"EN / RU": "EN / RU",
+"Поздравляем — вы заняли 1-е место!": "Congratulations — you took 1st place!",
+"Турнир": "Tournament",
+"ФИНАЛЬНЫЕ РЕЗУЛЬТАТЫ": "FINAL RESULTS",
+"• [b]Управление:[/b] стрелки ← ↑ ↓ → — перемещайте ракетку. • [b]Быстрая игра:[/b] один полноценный матч — сыграйте и сразу узнайте результат. • [b]Турнир:[/b] серия из 6 матчей — пройдите дистанцию и докажите стабильность.": "• [b]Controls:[/b] arrows ← ↑ ↓ → — move your paddle. • [b]Quick Game:[/b] one full match — play and see the result immediately. • [b]Tournament:[/b] series of 6 matches — complete the distance and prove your consistency.",
+"Начать турнир заново": "Restart Tournament",
+"Команда": "Team",
+"Очки": "Points",
+"Забито": "Goals For",
+"Пропущено": "Goals Against",
+"Разница": "Difference",
+"Поздравляем — вы заняли {v}-е место!": "Congratulations — you took {v}th place!",
+"Компьютер занял {v}-е место": "Computer took {v}th place",
+"Подтверждение": "Confirmation",
+"Вы уверены, что хотите вернуться в меню?": "Are you sure you want to return to the menu?",
+"Тур {v1} из {v2}": "Round {v1} of {v2}",
+"ТУР {v}": "ROUND {v}",
+"Русский": "Russian"
+}
