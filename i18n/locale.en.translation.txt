@@ -24,5 +24,10 @@ translations={
 "Вы уверены, что хотите вернуться в меню?": "Are you sure you want to return to the menu?",
 "Тур {v1} из {v2}": "Round {v1} of {v2}",
 "ТУР {v}": "ROUND {v}",
-"Русский": "Russian"
+"Русский": "Russian",
+"HOW_TO_PLAY_TEXT": "• [b]Controls:[/b] arrows ← ↑ ↓ → — move your paddle.
+
+• [b]Quick Game:[/b] one full match — play and see the result immediately.
+
+• [b]Tournament:[/b] series of 6 matches — complete the distance and prove your consistency."
 }
