@@ -69,6 +69,7 @@ func reset_tournament() -> void:
 
 # ---------- 2) Турнирные данные ----------
 var ads_shown_count: int = 0
+var show_ad_after_match: bool = false
 var player_team_name: String = ""
 var teams: Array[Dictionary] = []      # [{name, strength, points, goals_for, goals_against, ai_style}]
 var matches: Array[Dictionary] = []    # [{home, away, played, score}]
