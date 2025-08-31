@@ -30,6 +30,14 @@ func _ready() -> void:
 	play_next_btn.pressed.connect(_on_play_next_pressed)
 	simulate_btn.pressed.connect(_on_simulate_pressed)
 	_update_round_info()
+	
+	# Проверяем, нужно ли показать рекламу после матча
+	if Score.show_ad_after_match:
+		Score.show_ad_after_match = false
+		await get_tree().create_timer(2.0).timeout
+		if YandexSDK.is_working():
+			YandexSDK.show_interstitial_between_matches()
+			await YandexSDK.interstitial_ad
 
 func _notification(what: int) -> void:
 	# Обновляем календарь при возврате на экран

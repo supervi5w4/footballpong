@@ -401,10 +401,8 @@ func _finalize_match() -> void:
 			tree.change_scene_to_file("res://scenes/final_table.tscn")
 			return
 	
-	# Показываем рекламу между матчами турнира
-	if YandexSDK.is_working():
-		YandexSDK.show_interstitial_between_matches()
-		await YandexSDK.interstitial_ad
+	# Устанавливаем флаг для показа рекламы на экране календаря
+	Score.show_ad_after_match = true
 	
 	# Переходим к календарю турнира
 	print("Турнир: Продолжаем турнир, переходим к календарю")
