@@ -9,6 +9,7 @@ const FONT_SIZE : int = 16
 const PADDING : int = 20
 const MIN_PANEL_SIZE : Vector2 = Vector2(190, 250)
 const MAX_TEAMS_FOR_LAZY_RENDER : int = 16
+const POST_MATCH_AD_DELAY := 4.0
 
 # ---------- Цвета для топ-3 ----------
 const GOLD_COLOR : Color = Color(1.0, 0.84, 0.0, 1.0)    # #FFD700
@@ -34,7 +35,8 @@ func _ready() -> void:
 	# Проверяем, нужно ли показать рекламу после матча
 	if Score.show_ad_after_match:
 		Score.show_ad_after_match = false
-		await get_tree().create_timer(2.0).timeout
+		await get_tree().process_frame
+		await get_tree().create_timer(POST_MATCH_AD_DELAY).timeout
 		if YandexSDK.is_working():
 			YandexSDK.show_interstitial_between_matches()
 			await YandexSDK.interstitial_ad
