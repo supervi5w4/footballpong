@@ -13,8 +13,7 @@ EN / RU,EN / RU,EN / RU
 Разница,D,Разница
 Поздравляем — вы заняли {v}-е место!,Congratulations — you took {v}th place!,Поздравляем — вы заняли {v}-е место!
 Компьютер занял {v}-е место,Computer took {v}th place,Компьютер занял {v}-е место
-Подтверждение,Confirmation,Подтверждение
-Вы уверены, что хотите вернуться в меню?,Are you sure you want to return to the menu?,Вы уверены, что хотите вернуться в меню?
+
 Тур {v1} из {v2},Round {v1} of {v2},Тур {v1} из {v2}
 ТУР {v},ROUND {v},ТУР {v}
 Русский,Russian,Русский
@@ -43,3 +42,33 @@ HOW_TO_PLAY_TEXT,"• [b]Controls:[/b] arrows ← ↑ ↓ → — move your padd
 
 • [b]Турнир:[/b] серия из 6 матчей — пройдите дистанцию и докажите стабильность."
 От ворот до ворот,Goal to Goal,От ворот до ворот
+Спартак,Spartak,Спартак
+ЦСКА,CSKA,ЦСКА
+Зенит,Zenit,Зенит
+Динамо Москва,Dynamo Moscow,Динамо Москва
+Динамо Киев,Dynamo Kyiv,Динамо Киев
+Шахтёр,Shakhtar,Шахтёр
+Торпедо,Torpedo,Торпедо
+Локомотив,Lokomotiv,Локомотив
+Динамо Минск,Dynamo Minsk,Динамо Минск
+Днепр,Dnipro,Днепр
+Нефтчи,Neftchi,Нефтчи
+Кайрат,Kairat,Кайрат
+Черноморец,Chernomorets,Черноморец
+Арарат,Ararat,Арарат
+Пахтакор,Pakhtakor,Пахтакор
+Заря,Zorya,Заря
+Металлист,Metallist,Металлист
+Ростсельмаш,Rostselmash,Ростсельмаш
+Кубань,Kuban,Кубань
+Уралмаш,Uralmash,Уралмаш
+СКА Ростов,SKA Rostov,СКА Ростов
+Таврия,Tavriya,Таврия
+Жальгирис,Zalgiris,Жальгирис
+Крылья Советов,Krylya Sovetov,Крылья Советов
+Сокол,Sokol,Сокол
+Анжи,Anzhi,Анжи
+Судостроитель,Sudostroitel,Судостроитель
+Нистру,Nistru,Нистру
+Спартак Орёл,Spartak Oryol,Спартак Орёл
+Металлург Зап.,Metallurg Zap.,Металлург Зап.

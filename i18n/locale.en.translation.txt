@@ -19,8 +19,7 @@ translations={
 "Разница": "D",
 "Поздравляем — вы заняли {v}-е место!": "Congratulations — you took {v}th place!",
 "Компьютер занял {v}-е место": "Computer took {v}th place",
-"Подтверждение": "Confirmation",
-"Вы уверены, что хотите вернуться в меню?": "Are you sure you want to return to the menu?",
+
 "Тур {v1} из {v2}": "Round {v1} of {v2}",
 "ТУР {v}": "ROUND {v}",
 "Русский": "Russian",
