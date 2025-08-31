@@ -95,7 +95,7 @@ func _render_table() -> void:
 			text_color = BRONZE_COLOR
 		
 		# Создаем ячейки
-		var team_name : String = _truncate_team_name(String(team["name"]))
+		var team_name : String = _truncate_team_name(tr(String(team["name"])))
 		var cells : Array = [
 			team_name,
 			str(team["points"]),

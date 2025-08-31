@@ -68,7 +68,7 @@ func _render_table() -> void:
 	# Создаем строки
 	for i in range(sorted_teams.size()):
 		var team : Dictionary = sorted_teams[i]
-		var team_name   : String = String(team["name"])
+		var team_name   : String = tr(String(team["name"]))
 		var points      : int    = int(team["points"])
 		var goals_for   : int    = int(team["goals_for"])
 		var goals_against : int  = int(team["goals_against"])
@@ -189,8 +189,8 @@ func _render_calendar() -> void:
 		var round_matches = Score.rounds[round_index]
 		for match_idx in round_matches:
 			var match_data : Dictionary = Score.matches[match_idx]
-			var home_team : String = String(match_data["home"])
-			var away_team : String = String(match_data["away"])
+			var home_team : String = tr(String(match_data["home"]))
+			var away_team : String = tr(String(match_data["away"]))
 			var score_text : String = String(match_data["score"])
 			var is_played : bool = bool(match_data["played"])
 			
@@ -251,7 +251,7 @@ func _on_play_next_pressed() -> void:
 	for match_idx in round_idxs:
 		var m : Dictionary = Score.matches[match_idx]
 		if not bool(m["played"]) and (m["home"] == player or m["away"] == player):
-			print("Календарь: Найден матч ", match_idx, " - ", m["home"], " vs ", m["away"])
+			print("Календарь: Найден матч ", match_idx, " - ", tr(String(m["home"])), " vs ", tr(String(m["away"])))
 			Score.current_match = match_idx
 			get_tree().change_scene_to_file("res://scenes/game.tscn")
 			return
