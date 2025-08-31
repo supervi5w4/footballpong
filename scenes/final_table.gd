@@ -172,19 +172,7 @@ func _compare_teams(a : Dictionary, b : Dictionary) -> bool:
 
 # ---------- кнопка «В меню» ----------
 func _on_menu_pressed() -> void:
-	# Подтверждение перед выходом
-	var dialog = AcceptDialog.new()
-	dialog.title = tr("Подтверждение")
-	dialog.dialog_text = tr("Вы уверены, что хотите вернуться в меню?")
-	dialog.add_theme_font_override("font", load("res://fonts/PressStart2P-Regular.ttf"))
-	dialog.add_theme_font_size_override("font_size", FONT_SIZE)
-	
-	dialog.confirmed.connect(func():
-		get_tree().change_scene_to_file("res://scenes/menu.tscn")
-	)
-	
-	add_child(dialog)
-	dialog.popup_centered()
+	get_tree().change_scene_to_file("res://scenes/menu.tscn")
 
 # ---------- кнопка «Replay» ----------
 func _on_replay_pressed() -> void:
