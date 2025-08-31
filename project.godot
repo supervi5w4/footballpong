@@ -27,8 +27,7 @@ Music="*res://scripts/music_manager.gd"
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
-window/stretch/mode="viewport"
-window/stretch/aspect="keep_height"
+window/stretch/mode="canvas_items"
 
 [editor_plugins]
 
@@ -43,3 +42,4 @@ locale/translations=PackedStringArray("res://i18n/locale.en.translation", "res:/
 locale="ru"
 translations=PackedStringArray("res://i18n/locale.en.translation", "res://i18n/locale.ru.translation")
 locale/fallbacks=PackedStringArray("ru", "en")
+"#ÐÐ¾Ð»Ð¶Ð½Ð¾ÑÐ¾Ð¾ÑÐ²ÐµÑÑÑÐ²Ð¾Ð²Ð°ÑÑDEFAULT_LANGUAGEÐ²LocaleManagerlocale"="ru"
