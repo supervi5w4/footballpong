@@ -1,6 +1,5 @@
-[gd_scene load_steps=5 format=3 uid="uid://b21yhhp0h4evk"]
+[gd_scene load_steps=4 format=3 uid="uid://b21yhhp0h4evk"]
 
-[ext_resource type="Texture2D" uid="uid://bemigg6chvtat" path="res://assets/menu/menu_logo.png" id="1_con2f"]
 [ext_resource type="Script" uid="uid://c3qdudys24dc0" path="res://scenes/menu.gd" id="1_mhnvy"]
 [ext_resource type="FontFile" uid="uid://crbejkyhfw2bi" path="res://fonts/PressStart2P-Regular.ttf" id="1_vjb58"]
 [ext_resource type="Texture2D" uid="uid://37rfb12sxmf4" path="res://assets/gfx/field.png" id="2_mhnvy"]
@@ -21,7 +20,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-scale = Vector2(1.3, 1.3)
+scale = Vector2(1.1, 1.1)
 texture = ExtResource("2_mhnvy")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
@@ -50,23 +49,6 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("1_vjb58")
 text = "Турнир"
-
-[node name="menu_logo" type="TextureRect" parent="."]
-clip_contents = true
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.298958
-anchor_top = -0.000925926
-anchor_right = 0.672292
-anchor_bottom = 0.662778
-offset_right = 307.2
-offset_bottom = 307.2
-grow_horizontal = 0
-grow_vertical = 2
-scale = Vector2(0.7, 0.7)
-mouse_filter = 2
-texture = ExtResource("1_con2f")
-metadata/_edit_use_anchors_ = true
 
 [node name="LangButton" type="Button" parent="."]
 unique_name_in_owner = true
@@ -124,3 +106,15 @@ fit_content = true
 scroll_active = false
 autowrap_mode = 2
 horizontal_alignment = 1
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 0
+offset_left = 596.0
+offset_top = 343.0
+offset_right = 1259.0
+offset_bottom = 382.0
+theme_override_fonts/font = ExtResource("1_vjb58")
+theme_override_font_sizes/font_size = 39
+text = "От ворот до ворот"
+horizontal_alignment = 1
+vertical_alignment = 1
