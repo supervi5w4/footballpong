@@ -54,7 +54,7 @@ func _augment_bot(bot: Dictionary) -> Dictionary:
 func _on_start_pressed() -> void:
 	var player_name := team_name_input.text.strip_edges()
 	if player_name.is_empty():
-		player_name = "Игрок"
+		player_name = tr("Игрок")
 
 	# Не допускаем совпадение имени игрока с ботами (редкий кейс, но пусть будет)
 	var existing_names := BOT_POOL.map(func(b): return String(b["name"]))
