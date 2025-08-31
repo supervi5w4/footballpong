@@ -62,5 +62,6 @@ translations={
 "Судостроитель": "Sudostroitel",
 "Нистру": "Nistru",
 "Спартак Орёл": "Spartak Oryol",
-"Металлург Зап.": "Metallurg Zap."
+"Металлург Зап.": "Metallurg Zap.",
+"Игрок": "Gamer"
 }
