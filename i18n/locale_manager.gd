@@ -1,9 +1,23 @@
 extends Node
 
+# Экспортируемая переменная для языка по умолчанию (единый источник)
+@export var DEFAULT_LANGUAGE := "ru"
+
+# Список поддерживаемых языков
+const SUPPORTED_LANGUAGES := ["ru", "en"]
+
 func _ready() -> void:
+	# Синхронизируем настройки проекта с DEFAULT_LANGUAGE
+	_sync_project_settings()
 	_auto_detect_web_language()
 	translate_tree(get_tree().root)
 	get_tree().connect("node_added", Callable(self, "_on_node_added"))
+
+func _sync_project_settings() -> void:
+	# Синхронизируем локаль проекта с DEFAULT_LANGUAGE
+	if TranslationServer.get_locale() != DEFAULT_LANGUAGE:
+		TranslationServer.set_locale(DEFAULT_LANGUAGE)
+		print("LocaleManager: синхронизирована локаль проекта с DEFAULT_LANGUAGE: ", DEFAULT_LANGUAGE)
 
 func set_lang(lang: String) -> void:
 	print("LocaleManager: переключаем на язык ", lang)
@@ -65,15 +79,30 @@ func _on_node_added(node: Node) -> void:
 	translate_tree(node)
 
 func _auto_detect_web_language() -> void:
+	var detected_language = DEFAULT_LANGUAGE
+	
 	if Engine.has_singleton("JavaScriptBridge"):
-		var result = JavaScriptBridge.eval("navigator.language || navigator.userLanguage")
-		if result != null:
-			var lang = str(result)
-			if lang and lang.begins_with("ru"):
-				TranslationServer.set_locale("ru")
+		# Получаем язык браузера
+		var browser_language = JavaScriptBridge.eval("navigator.language || navigator.userLanguage")
+		
+		if browser_language != null:
+			var lang = str(browser_language)
+			print("LocaleManager: обнаружен язык браузера: ", lang)
+			
+			# Извлекаем основной код языка (например, "ru-RU" -> "ru")
+			var primary_lang = lang.split("-")[0].to_lower()
+			
+			# Проверяем, поддерживается ли язык
+			if primary_lang in SUPPORTED_LANGUAGES:
+				detected_language = primary_lang
+				print("LocaleManager: язык поддерживается, устанавливаем: ", detected_language)
 			else:
-				TranslationServer.set_locale("ru")
+				print("LocaleManager: язык не поддерживается, используем по умолчанию: ", DEFAULT_LANGUAGE)
 		else:
-			TranslationServer.set_locale("ru")
+			print("LocaleManager: не удалось получить язык браузера, используем по умолчанию: ", DEFAULT_LANGUAGE)
 	else:
-		TranslationServer.set_locale("ru")
+		print("LocaleManager: JavaScriptBridge недоступен, используем по умолчанию: ", DEFAULT_LANGUAGE)
+	
+	# Устанавливаем локаль только после определения языка
+	TranslationServer.set_locale(detected_language)
+	print("LocaleManager: локаль установлена на ", TranslationServer.get_locale())
