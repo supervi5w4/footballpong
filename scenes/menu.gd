@@ -5,6 +5,7 @@ extends Control
 @onready var tournament_btn : Button = %TournamentBtn  # Новая кнопка «Турнир»
 @onready var lang_btn : Button = %LangButton     # Кнопка переключения языка
 @onready var how_to_play_label : RichTextLabel = %HowToPlayPanel/VBoxContainer/RichTextLabel  # Текст "Как играть"
+@onready var title_label : Label = %Title        # Заголовок игры
 #@onready var exit_btn : Button = %ExitBtn        # Кнопка «Выход» (если используется)
 
 func _ready() -> void:
@@ -28,6 +29,9 @@ func _ready() -> void:
 	
 	# Переводим текст "Как играть"
 	_update_how_to_play_text()
+	
+	# Переводим заголовок
+	_update_title_text()
 
 func _on_play_pressed() -> void:
 	# Устанавливаем current_match в -1 для обычной игры
@@ -61,6 +65,9 @@ func _on_lang_button_pressed() -> void:
 	# Обновляем текст "Как играть" после смены языка
 	_update_how_to_play_text()
 	
+	# Обновляем заголовок после смены языка
+	_update_title_text()
+	
 	print("Переключение завершено")
 
 
@@ -77,11 +84,11 @@ func _update_lang_button_text() -> void:
 
 func _update_how_to_play_text() -> void:
 	if how_to_play_label:
-		how_to_play_label.text = tr("• [b]Управление:[/b] стрелки ← ↑ ↓ → — перемещайте ракетку.  
+		how_to_play_label.text = tr("HOW_TO_PLAY_TEXT")
 
-• [b]Быстрая игра:[/b] один полноценный матч — сыграйте и сразу узнайте результат.
-
-• [b]Турнир:[/b] серия из 6 матчей — пройдите дистанцию и докажите стабильность.")
+func _update_title_text() -> void:
+	if title_label:
+		title_label.text = tr("От ворот до ворот")
 
 func _on_exit_pressed() -> void:
 	# Завершить игру

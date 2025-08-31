@@ -27,9 +27,9 @@ texture = ExtResource("2_mhnvy")
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.302083
-anchor_top = 0.511111
+anchor_top = 0.468518
 anchor_right = 0.666667
-anchor_bottom = 0.724744
+anchor_bottom = 0.682152
 offset_top = -6.10352e-05
 offset_right = -500.0
 offset_bottom = -178.724
@@ -66,6 +66,7 @@ theme_override_font_sizes/font_size = 16
 text = "EN / RU"
 
 [node name="HowToPlayPanel" type="Panel" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.5
@@ -109,12 +110,12 @@ horizontal_alignment = 1
 
 [node name="Title" type="Label" parent="."]
 layout_mode = 0
-offset_left = 596.0
-offset_top = 343.0
-offset_right = 1259.0
-offset_bottom = 382.0
+offset_left = 342.0
+offset_top = 342.0
+offset_right = 1617.0
+offset_bottom = 417.0
 theme_override_fonts/font = ExtResource("1_vjb58")
-theme_override_font_sizes/font_size = 39
+theme_override_font_sizes/font_size = 75
 text = "От ворот до ворот"
 horizontal_alignment = 1
 vertical_alignment = 1
